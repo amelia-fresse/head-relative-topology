@@ -24,7 +24,7 @@ export function Header({ snapshot, settings, now, refreshing, onRefresh, onToggl
     <header className="header">
       <div className="header-text">
         <div className="header-top">
-          <span className="app-name" title="Head, Refs & Tips">
+          <span className="app-name" title="HEAD-Relative Topology">
             hrt
           </span>
           {repoName && (

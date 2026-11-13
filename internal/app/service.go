@@ -130,7 +130,20 @@ func (s *Service) Snapshot() (model.Snapshot, error) {
 	if last != nil {
 		return *last, nil
 	}
-	return s.rebuild(context.Background(), false, true)
+	snap, err := s.rebuild(context.Background(), false, true)
+	if errors.Is(err, ErrNoRepo) {
+		return emptySnapshot(), nil
+	}
+	return snap, err
+}
+
+// emptySnapshot signals "no repository open" to the frontend (Repo.Path == "").
+func emptySnapshot() model.Snapshot {
+	return model.Snapshot{
+		Main:     model.MainLine{Anchors: []model.Anchor{}},
+		Branches: []model.Branch{},
+		Warnings: []string{},
+	}
 }
 
 // Refresh recomputes the snapshot; fetch=true runs `git fetch` first.
@@ -147,8 +160,8 @@ func (s *Service) OpenRepo(path string) (model.Snapshot, error) {
 	return s.rebuild(context.Background(), false, true)
 }
 
-// PickRepo shows a folder picker and opens the chosen repository.
-// It returns ErrNoRepo-free empty results when the user cancels.
+// PickRepo shows a folder picker and opens the chosen repository. When the
+// user cancels it returns the current snapshot unchanged.
 func (s *Service) PickRepo() (model.Snapshot, error) {
 	path, err := application.Get().Dialog.OpenFile().
 		SetTitle("Open a git repository").
