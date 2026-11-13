@@ -28,3 +28,7 @@ wails3 build      # produce bin/hrt
 ```
 
 Run `hrt [path]` inside a repository (defaults to the current directory).
+
+## License
+
+MIT — see [LICENSE](LICENSE).
