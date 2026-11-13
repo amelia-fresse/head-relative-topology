@@ -1,4 +1,4 @@
-# hrt — Head, Refs & Tips
+# hrt — HEAD-Relative Topology
 
 A tiny side-window that shows where every branch and pull request sits relative to `origin/main`.
 

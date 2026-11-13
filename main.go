@@ -24,7 +24,7 @@ func main() {
 
 	a := application.New(application.Options{
 		Name:        "hrt",
-		Description: "Head, Refs & Tips — where every branch sits relative to origin/main",
+		Description: "HEAD-Relative Topology — where every branch sits relative to origin/main",
 		Services:    []application.Service{application.NewService(svc)},
 		Assets: application.AssetOptions{
 			Handler: application.AssetFileServerFS(assets),

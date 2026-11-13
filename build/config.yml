@@ -8,7 +8,7 @@ info:
   companyName: "amelia-fresse" # The name of the company
   productName: "hrt" # The name of the application
   productIdentifier: "io.github.amelia-fresse.hrt" # The unique product identifier
-  description: "Head, Refs & Tips — where every branch sits relative to origin/main" # The application description
+  description: "HEAD-Relative Topology — where every branch sits relative to origin/main" # The application description
   copyright: "(c) 2026 amelia-fresse" # Copyright text
   comments: "" # Comments
   version: "0.0.1" # The application version
