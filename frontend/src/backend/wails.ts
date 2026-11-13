@@ -1,6 +1,5 @@
 import { Clipboard, Events } from '@wailsio/runtime'
 import { Service } from '../../bindings/github.com/amelia-fresse/head-relative-topology/internal/app'
-import { Settings as SettingsModel } from '../../bindings/github.com/amelia-fresse/head-relative-topology/internal/model'
 import { Snapshot as SnapshotEvent } from '../../bindings/events'
 import type { Settings, Snapshot } from '../model'
 import type { Backend } from './types'
@@ -12,7 +11,7 @@ export function createWailsBackend(): Backend {
     refresh: (fetch) => Service.Refresh(fetch),
     pickRepo: () => Service.PickRepo(),
     getSettings: () => Service.GetSettings(),
-    saveSettings: (s: Settings) => Service.SaveSettings(new SettingsModel(s)),
+    saveSettings: (s: Settings) => Service.SaveSettings(s),
     hideBranch: (name) => Service.HideBranch(name),
     unhideBranch: (name) => Service.UnhideBranch(name),
     openURL: (url) => Service.OpenURL(url),

@@ -58,7 +58,8 @@ export function OpenURL(url: string): $CancellablePromise<void> {
 }
 
 /**
- * PickRepo shows a folder picker and opens the chosen repository.
+ * PickRepo shows a folder picker and opens the chosen repository. When the
+ * user cancels it returns the current snapshot unchanged.
  */
 export function PickRepo(): $CancellablePromise<model$0.Snapshot> {
     return $Call.ByID(3774444702).then(($result: any) => {
@@ -68,6 +69,7 @@ export function PickRepo(): $CancellablePromise<model$0.Snapshot> {
 
 /**
  * Refresh recomputes the snapshot; fetch=true runs `git fetch` first.
+ * GitHub data is always re-queried.
  */
 export function Refresh(fetch: boolean): $CancellablePromise<model$0.Snapshot> {
     return $Call.ByID(966950682, fetch).then(($result: any) => {

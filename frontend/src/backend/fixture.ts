@@ -70,10 +70,10 @@ export function createFixtureBackend(name: FixtureName = 'sample'): Backend {
     const s = shiftTimes(raw, now - Date.parse(raw.generatedAt))
     s.fetchedAt = new Date(fetchedAt).toISOString()
     s.generatedAt = new Date(now).toISOString()
-    const patterns = config.hidePatterns.map((p) => [p, globToRegExp(p)] as const)
+    const patterns = (config.hidePatterns ?? []).map((p) => [p, globToRegExp(p)] as const)
     for (const b of s.branches as any[]) {
       const pattern = patterns.find(([, re]) => re.test(b.name))
-      if (config.hiddenBranches.includes(b.name)) {
+      if ((config.hiddenBranches ?? []).includes(b.name)) {
         b.hidden = true
         b.hiddenReason = HAND
       } else if (pattern) {
@@ -120,12 +120,12 @@ export function createFixtureBackend(name: FixtureName = 'sample'): Backend {
     getSettings: async () => ({ ...defaultSettings(), ...(load<Partial<Settings>>(SETTINGS_KEY) ?? {}), ...urlOverrides() }),
     saveSettings: async (s) => store(SETTINGS_KEY, s),
     hideBranch: async (branch) => {
-      if (!config.hiddenBranches.includes(branch)) config = { ...config, hiddenBranches: [...config.hiddenBranches, branch] }
+      if (!(config.hiddenBranches ?? []).includes(branch)) config = { ...config, hiddenBranches: [...(config.hiddenBranches ?? []), branch] }
       store(CONFIG_KEY, config)
       return emit()
     },
     unhideBranch: async (branch) => {
-      config = { ...config, hiddenBranches: config.hiddenBranches.filter((n) => n !== branch) }
+      config = { ...config, hiddenBranches: (config.hiddenBranches ?? []).filter((n) => n !== branch) }
       store(CONFIG_KEY, config)
       return emit()
     },
