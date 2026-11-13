@@ -123,3 +123,16 @@ export const CopyIcon = (p: P) => (
     <path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1" />
   </Icon>
 )
+
+export const LaptopIcon = (p: P) => (
+  <Icon {...p}>
+    <rect x="4" y="5" width="16" height="11" rx="1.5" />
+    <path d="M2 19h20" />
+  </Icon>
+)
+
+export const CloudIcon = (p: P) => (
+  <Icon {...p}>
+    <path d="M7 18h10a4 4 0 0 0 .6-7.95A6 6 0 0 0 6.2 9.4 4.3 4.3 0 0 0 7 18z" />
+  </Icon>
+)

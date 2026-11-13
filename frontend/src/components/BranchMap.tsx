@@ -3,7 +3,7 @@ import { relTime } from '../format'
 import { COMPACT, NORMAL, contentX, dotX, type Geometry } from '../geometry'
 import type { BranchRow, GapRow, HeadRow, MergedRow, Row } from '../layout'
 import { STATUS_LABEL, statusOf, locationOf, LOCATION_LABEL, type Anchor, type Branch, type MergedPR, type Snapshot } from '../model'
-import { MoreIcon } from './icons'
+import { MoreIcon, CloudIcon, LaptopIcon } from './icons'
 import { Rails } from './Rails'
 
 export type MapTarget =
@@ -179,7 +179,6 @@ const BranchRowView = memo(function BranchRowView({
         dotY={g.dotY}
         depth={row.depth}
         tone={row.dimmed ? 'dim' : 'normal'}
-        location={locationOf(b)}
       />
       {b.ahead > 0 && (
         <span className="ahead-pill" style={{ left: x - g.dotSize / 2 - 3, top: g.dotY }} aria-hidden="true">
@@ -207,6 +206,17 @@ const BranchRowView = memo(function BranchRowView({
   )
 })
 
+/** Small icon before the name: laptop = only on this machine, cloud = only on the remote. */
+function LocationMark({ b }: { b: Branch }) {
+  const loc = locationOf(b)
+  if (loc === 'both') return null
+  return (
+    <span className={`loc-mark loc-mark-${loc}`} title={LOCATION_LABEL[loc]}>
+      {loc === 'local' ? <LaptopIcon size={13} /> : <CloudIcon size={13} />}
+    </span>
+  )
+}
+
 /** Out-of-sync counts between the local branch and its remote counterpart. */
 function Sync({ b }: { b: Branch }) {
   if (b.unpushed <= 0 && b.unpulled <= 0) return null
@@ -229,6 +239,7 @@ function Sync({ b }: { b: Branch }) {
 function CompactBranch({ b }: { b: Branch }) {
   return (
     <span className="c-line">
+      <LocationMark b={b} />
       <span className="name" title={b.name}>
         {b.name}
       </span>
@@ -249,6 +260,7 @@ function BranchCard({ row }: { row: BranchRow }) {
   return (
     <span className="card">
       <span className="title">
+        <LocationMark b={b} />
         <span className="name" title={b.name}>
           {b.name}
         </span>

@@ -947,24 +947,6 @@ button {
 
 /* ---- where a branch lives: both (solid), local only (dashed), remote only (ghost, dotted) */
 
-.seg.lane.conn-local {
-  background: repeating-linear-gradient(to right, var(--lane) 0 5px, transparent 5px 9px);
-}
-
-.seg.lane.conn-remote {
-  background: repeating-linear-gradient(to right, var(--lane) 0 2px, transparent 2px 5px);
-}
-
-.seg.elbow.conn-local {
-  border-left-style: dashed;
-  border-bottom-style: dashed;
-}
-
-.seg.elbow.conn-remote {
-  border-left-style: dotted;
-  border-bottom-style: dotted;
-}
-
 .loc-local .card {
   border-style: dashed;
   border-color: var(--border-strong);
@@ -1010,4 +992,16 @@ button {
 
 .c-meta .sync {
   margin-left: 0;
+}
+
+.loc-mark {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  margin-right: 6px;
+  color: var(--muted);
+}
+
+.c-line .loc-mark {
+  margin-right: 0;
 }
