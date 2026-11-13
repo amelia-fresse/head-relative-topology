@@ -1,6 +1,6 @@
 import { baseName, relTime } from '../format'
 import type { Settings, Snapshot } from '../model'
-import { CompactIcon, MergeIcon, RefreshIcon, ThemeIcon } from './icons'
+import { CompactIcon, FolderIcon, MergeIcon, RefreshIcon, ThemeIcon } from './icons'
 
 interface Props {
   snapshot: Snapshot | null
@@ -11,11 +11,12 @@ interface Props {
   onToggleCompact(): void
   onToggleMerged(): void
   onCycleTheme(): void
+  onOpenRepo(): void
 }
 
 const THEME_LABEL: Record<string, string> = { default: 'Default', babydoll: 'Babydoll', dolly: 'Dolly' }
 
-export function Header({ snapshot, settings, now, refreshing, onRefresh, onToggleCompact, onToggleMerged, onCycleTheme }: Props) {
+export function Header({ snapshot, settings, now, refreshing, onRefresh, onToggleCompact, onToggleMerged, onCycleTheme, onOpenRepo }: Props) {
   const repo = snapshot?.repo
   const repoName = repo ? repo.slug || (repo.path ? baseName(repo.path) : '') : ''
   const fetched = snapshot ? relTime(snapshot.fetchedAt, now) : null
@@ -36,6 +37,15 @@ export function Header({ snapshot, settings, now, refreshing, onRefresh, onToggl
         {snapshot && repo?.path && <div className="fetched">{fetched ? `fetched ${fetched}` : 'not fetched yet'}</div>}
       </div>
       <div className="header-actions">
+        <button
+          type="button"
+          className="icon-btn"
+          onClick={onOpenRepo}
+          aria-label="Open another repository"
+          title="Open another repository (o)"
+        >
+          <FolderIcon />
+        </button>
         <button
           type="button"
           className={`icon-btn${refreshing ? ' is-busy' : ''}`}

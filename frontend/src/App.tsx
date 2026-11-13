@@ -207,6 +207,7 @@ export default function App() {
   useShortcuts(
     {
       r: refresh,
+      o: pickRepo,
       c: () => updateSettings({ compact: !settingsRef.current.compact }),
       m: () => updateSettings({ showMerged: !settingsRef.current.showMerged }),
       t: () => updateSettings({ theme: nextTheme(settingsRef.current.theme) }),
@@ -236,6 +237,7 @@ export default function App() {
         onToggleCompact={() => updateSettings({ compact: !settings.compact })}
         onToggleMerged={() => updateSettings({ showMerged: !settings.showMerged })}
         onCycleTheme={() => updateSettings({ theme: nextTheme(settings.theme) })}
+        onOpenRepo={pickRepo}
       />
       <Banners notices={allNotices} onDismiss={dismiss} />
       <main className="content">
