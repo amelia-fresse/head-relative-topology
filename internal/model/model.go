@@ -23,7 +23,8 @@ const (
 // view). The frontend may drop anchors (e.g. convergence points when "show
 // merged" is off, or anchors whose only branches are hidden); the number of
 // collapsed commits between two consecutive visible anchors A (newer) and B
-// (older) is always B.Behind - A.Behind - 1.
+// (older) is B.Behind - A.Behind - 1, clamped to 0 (on histories with merge
+// commits two anchors that are not ancestors of each other can tie).
 type Snapshot struct {
 	Repo        RepoInfo  `json:"repo"`
 	Main        MainLine  `json:"main"`
