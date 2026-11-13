@@ -1,0 +1,168 @@
+/*
+ * Themes: colours, fonts and radii only — never sizes or spacing, so the line
+ * geometry (src/geometry.ts) holds in every theme. All themes are dark.
+ * Keep plain #RRGGBB values for text/background tokens: src/themes.test.ts
+ * checks their contrast.
+ */
+
+:root,
+:root[data-theme='default'] {
+  --ground: #0F1115;
+  --surface: #171A21;
+  --surface-hover: #1D212A;
+  --tip-bg: #1D212A;
+  --border: #2A2F3A;
+  --border-strong: #3A4150;
+  --text: #E7E9EE;
+  --muted: #9AA3B2;
+  --lane: #4A5263;
+  --main: #E7E9EE;
+  --merged: #A78BFA;
+  --st-approved: #4ADE80;
+  --st-review: #60A5FA;
+  --st-ci-failing: #F87171;
+  --st-conflicts: #FBBF24;
+  --st-draft: #9AA3B2;
+  --st-no-pr: #6B7280;
+  --focus: #60A5FA;
+
+  --font-ui: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  --font-title: 'Inter', system-ui, sans-serif;
+  --title-style: normal;
+  --title-weight: 600;
+  --title-color: #E7E9EE;
+
+  --radius-card: 8px;
+
+  --head-bg: #E7E9EE;
+  --head-fg: #0F1115;
+  --head-meta: #3A4150;
+  --head-radius: 8px;
+
+  --pill-bg: #171A21;
+  --pill-fg: #9AA3B2;
+  --pill-border: #2A2F3A;
+  --count-bg: #0F1115;
+  --count-fg: #9AA3B2;
+  --count-border: #2A2F3A;
+
+  /* Divergence point on main: hollow ring. */
+  --anchor-bg: #0F1115;
+  --anchor-ring: inset 0 0 0 2px #E7E9EE;
+  --head-dot-bg: #E7E9EE;
+  --head-dot-shadow: 0 0 0 3px #0F1115;
+  --head-dot-scale: 1;
+
+  --btn-primary-bg: #E7E9EE;
+  --btn-primary-fg: #0F1115;
+}
+
+:root[data-theme='babydoll'] {
+  --ground: #141015;
+  --surface: #1E1820;
+  --surface-hover: #261E29;
+  --tip-bg: #241C26;
+  --border: #2E2430;
+  --border-strong: #45364A;
+  --text: #F6EAEE;
+  --muted: #B8A3AD;
+  --lane: #4F3D48;
+  --main: #F4B6C6;
+  --merged: #CDB4FF;
+  --st-approved: #8EDDB0;
+  --st-review: #9FB7FF;
+  --st-ci-failing: #FF8E8E;
+  --st-conflicts: #F6D58E;
+  --st-draft: #B8A3AD;
+  --st-no-pr: #6F5E68;
+  --focus: #F4B6C6;
+
+  --font-ui: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-title: 'Fraunces', Georgia, serif;
+  --title-style: italic;
+  --title-weight: 600;
+  --title-color: #F4B6C6;
+
+  --radius-card: 14px;
+
+  --head-bg: #F4B6C6;
+  --head-fg: #2A1520;
+  --head-meta: #5A3442;
+  --head-radius: 999px;
+
+  --pill-bg: #241C24;
+  --pill-fg: #F4B6C6;
+  --pill-border: transparent;
+  --count-bg: #141015;
+  --count-fg: #F4B6C6;
+  --count-border: #4F3D48;
+
+  /* Pearls. */
+  --anchor-bg: radial-gradient(circle at 35% 30%, #FFFFFF 0%, #F7DCE3 40%, #C99AA8 100%);
+  --anchor-ring: 0 0 0 2px #141015;
+  --head-dot-bg: radial-gradient(circle at 35% 30%, #FFFFFF 0%, #F7DCE3 40%, #C99AA8 100%);
+  --head-dot-shadow: 0 0 0 2px #141015, 0 0 12px 3px rgba(244, 182, 198, 0.55);
+  --head-dot-scale: 1.2;
+
+  --btn-primary-bg: #F4B6C6;
+  --btn-primary-fg: #2A1520;
+}
+
+:root[data-theme='dolly'] {
+  --ground: #0D1022;
+  --surface: #161A33;
+  --surface-hover: #1D2242;
+  --tip-bg: #1A1F3D;
+  --border: #262B4D;
+  --border-strong: #3A4170;
+  --text: #F2F4FF;
+  --muted: #A3A9CC;
+  --lane: #3F7FA6;
+  --main: #FFFFFF;
+  --merged: #C6B3FF;
+  --st-approved: #7EE2A8;
+  --st-review: #5BCEFA;
+  --st-ci-failing: #FF7A90;
+  --st-conflicts: #FFD27A;
+  --st-draft: #A3A9CC;
+  --st-no-pr: #5A6088;
+  --focus: #5BCEFA;
+
+  --font-ui: 'Nunito', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-title: 'Fredoka', 'Nunito', system-ui, sans-serif;
+  --title-style: normal;
+  --title-weight: 600;
+  --title-color: #5BCEFA;
+
+  --radius-card: 16px;
+
+  --head-bg: #F2F4FF;
+  --head-fg: #0D1022;
+  --head-meta: #3D4470;
+  --head-radius: 16px;
+
+  --pill-bg: #13304A;
+  --pill-fg: #5BCEFA;
+  --pill-border: transparent;
+  --count-bg: #0D1022;
+  --count-fg: #F5A9B8;
+  --count-border: #F5A9B8;
+
+  --anchor-bg: #FFFFFF;
+  --anchor-ring: 0 0 0 2px #F5A9B8;
+  --head-dot-bg: #FFFFFF;
+  --head-dot-shadow: 0 0 0 3px #F5A9B8, 0 0 0 6px #5BCEFA;
+  --head-dot-scale: 1;
+
+  --btn-primary-bg: #5BCEFA;
+  --btn-primary-fg: #0D1022;
+}
+
+/* Title flourish: trans-flag stripes in the app name. */
+:root[data-theme='dolly'] .app-name {
+  background-image: linear-gradient(90deg, #5BCEFA 0%, #F5A9B8 50%, #FFFFFF 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
