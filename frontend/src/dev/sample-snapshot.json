@@ -1,0 +1,47 @@
+{
+  "repo": { "path": "/home/dev/my-app", "slug": "acme/my-app", "remote": "origin", "defaultBranch": "main" },
+  "generatedAt": "2026-11-13T17:00:00Z",
+  "fetchedAt": "2026-11-13T16:58:00Z",
+  "warnings": [],
+  "main": {
+    "ref": "origin/main",
+    "head": { "sha": "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678", "shortSha": "a1b2c3d", "subject": "Merge pull request #422 from acme/fix/typo", "time": "2026-11-13T16:40:00Z" },
+    "olderHidden": true,
+    "anchors": [
+      { "commit": { "sha": "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678", "shortSha": "a1b2c3d", "subject": "Merge pull request #422 from acme/fix/typo", "time": "2026-11-13T16:40:00Z" }, "behind": 0, "isHead": true, "branchNames": [], "merged": [] },
+      { "commit": { "sha": "f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4", "shortSha": "f4f4f4f", "subject": "Bump test timeout", "time": "2026-11-13T15:10:00Z" }, "behind": 2, "isHead": false, "branchNames": ["agent/fix-flaky-tests"], "merged": [] },
+      { "commit": { "sha": "e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2", "shortSha": "e2e2e2e", "subject": "Add export presets (#421)", "time": "2026-11-13T16:00:00Z" }, "behind": 5, "isHead": false, "branchNames": [],
+        "merged": [ { "number": 421, "title": "Add export presets", "url": "https://github.com/acme/my-app/pull/421", "headRef": "feat/export-presets", "author": "agent-2", "mergedAt": "2026-11-13T16:00:00Z", "mergeCommitSha": "e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2" } ] },
+      { "commit": { "sha": "f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3", "shortSha": "f3f3f3f", "subject": "Refactor session store", "time": "2026-11-13T11:20:00Z" }, "behind": 9, "isHead": false, "branchNames": ["feat/auth-sso"], "merged": [] },
+      { "commit": { "sha": "d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0", "shortSha": "d0d0d0d", "subject": "Update CI matrix", "time": "2026-11-13T09:30:00Z" }, "behind": 12, "isHead": false, "branchNames": ["dependabot/npm_and_yarn/vite-8.2.5"], "merged": [] },
+      { "commit": { "sha": "e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1", "shortSha": "e1e1e1e", "subject": "Fix importer crash on empty files (#418)", "time": "2026-11-13T14:00:00Z" }, "behind": 15, "isHead": false, "branchNames": [],
+        "merged": [ { "number": 418, "title": "Fix importer crash on empty files", "url": "https://github.com/acme/my-app/pull/418", "headRef": "fix/importer-empty", "author": "agent-1", "mergedAt": "2026-11-13T14:00:00Z", "mergeCommitSha": "e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1" } ] },
+      { "commit": { "sha": "f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2", "shortSha": "f2f2f2f", "subject": "Release 1.8.0", "time": "2026-11-11T10:00:00Z" }, "behind": 23, "isHead": false, "branchNames": ["feat/ifc-export", "chore/deps-bump"], "merged": [] },
+      { "commit": { "sha": "f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1", "shortSha": "f1f1f1f", "subject": "Initial importer rewrite", "time": "2026-11-04T09:00:00Z" }, "behind": 47, "isHead": false, "branchNames": ["fix/legacy-importer", "archive/old-spike"], "merged": [] }
+    ]
+  },
+  "branches": [
+    { "name": "agent/fix-flaky-tests", "local": true, "remote": true, "tipSha": "b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4", "unpushed": 1, "unpulled": 0, "parent": "", "baseSha": "f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4", "ahead": 2, "behind": 2, "lastCommitAt": "2026-11-13T16:55:00Z", "status": "review",
+      "pr": { "number": 429, "title": "Stabilise flaky integration tests", "url": "https://github.com/acme/my-app/pull/429", "author": "agent-3", "isDraft": false, "baseRef": "main", "headRef": "agent/fix-flaky-tests", "headSha": "b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b3", "reviewDecision": "REVIEW_REQUIRED", "checks": "pending", "failingChecks": [], "mergeable": "MERGEABLE", "updatedAt": "2026-11-13T16:50:00Z" },
+      "worktree": { "path": "/home/dev/my-app-worktrees/fix-flaky-tests", "dirty": true, "isMain": false }, "hidden": false, "hiddenReason": "" },
+    { "name": "feat/auth-sso", "local": true, "remote": true, "tipSha": "b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3", "unpushed": 0, "unpulled": 0, "parent": "", "baseSha": "f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3", "ahead": 5, "behind": 9, "lastCommitAt": "2026-11-13T13:00:00Z", "status": "approved",
+      "pr": { "number": 424, "title": "SSO login with OIDC", "url": "https://github.com/acme/my-app/pull/424", "author": "agent-1", "isDraft": false, "baseRef": "main", "headRef": "feat/auth-sso", "headSha": "b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3", "reviewDecision": "APPROVED", "checks": "passing", "failingChecks": [], "mergeable": "MERGEABLE", "updatedAt": "2026-11-13T13:30:00Z" },
+      "worktree": { "path": "/home/dev/my-app-worktrees/auth-sso", "dirty": false, "isMain": false }, "hidden": false, "hiddenReason": "" },
+    { "name": "feat/auth-sso-ui", "local": true, "remote": true, "tipSha": "b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5", "unpushed": 0, "unpulled": 0, "parent": "feat/auth-sso", "baseSha": "b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3", "ahead": 3, "behind": 9, "lastCommitAt": "2026-11-13T15:40:00Z", "status": "draft",
+      "pr": { "number": 426, "title": "SSO login screen", "url": "https://github.com/acme/my-app/pull/426", "author": "agent-4", "isDraft": true, "baseRef": "feat/auth-sso", "headRef": "feat/auth-sso-ui", "headSha": "b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5", "reviewDecision": "", "checks": "passing", "failingChecks": [], "mergeable": "MERGEABLE", "updatedAt": "2026-11-13T15:40:00Z" },
+      "worktree": null, "hidden": false, "hiddenReason": "" },
+    { "name": "dependabot/npm_and_yarn/vite-8.2.5", "local": false, "remote": true, "tipSha": "b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6", "unpushed": 0, "unpulled": 0, "parent": "", "baseSha": "d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0", "ahead": 1, "behind": 12, "lastCommitAt": "2026-11-13T09:31:00Z", "status": "review",
+      "pr": { "number": 427, "title": "Bump vite from 8.2.4 to 8.2.5", "url": "https://github.com/acme/my-app/pull/427", "author": "dependabot", "isDraft": false, "baseRef": "main", "headRef": "dependabot/npm_and_yarn/vite-8.2.5", "headSha": "b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6", "reviewDecision": "REVIEW_REQUIRED", "checks": "passing", "failingChecks": [], "mergeable": "MERGEABLE", "updatedAt": "2026-11-13T09:40:00Z" },
+      "worktree": null, "hidden": true, "hiddenReason": "pattern dependabot/*" },
+    { "name": "feat/ifc-export", "local": true, "remote": true, "tipSha": "b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2", "unpushed": 0, "unpulled": 0, "parent": "", "baseSha": "f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2", "ahead": 8, "behind": 23, "lastCommitAt": "2026-11-12T18:00:00Z", "status": "ci_failing",
+      "pr": { "number": 415, "title": "IFC 4.3 export", "url": "https://github.com/acme/my-app/pull/415", "author": "agent-2", "isDraft": false, "baseRef": "main", "headRef": "feat/ifc-export", "headSha": "b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2", "reviewDecision": "REVIEW_REQUIRED", "checks": "failing", "failingChecks": ["test (ubuntu-latest)", "lint"], "mergeable": "MERGEABLE", "updatedAt": "2026-11-12T18:10:00Z" },
+      "worktree": null, "hidden": false, "hiddenReason": "" },
+    { "name": "chore/deps-bump", "local": true, "remote": false, "tipSha": "b7b7b7b7b7b7b7b7b7b7b7b7b7b7b7b7b7b7b7b7", "unpushed": 1, "unpulled": 0, "parent": "", "baseSha": "f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2", "ahead": 1, "behind": 23, "lastCommitAt": "2026-11-11T12:00:00Z", "status": "no_pr",
+      "pr": null, "worktree": { "path": "/home/dev/my-app", "dirty": false, "isMain": true }, "hidden": false, "hiddenReason": "" },
+    { "name": "fix/legacy-importer", "local": true, "remote": true, "tipSha": "b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1", "unpushed": 0, "unpulled": 0, "parent": "", "baseSha": "f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1", "ahead": 12, "behind": 47, "lastCommitAt": "2026-11-06T10:00:00Z", "status": "conflicts",
+      "pr": { "number": 402, "title": "Port legacy importer to new pipeline", "url": "https://github.com/acme/my-app/pull/402", "author": "amelia", "isDraft": false, "baseRef": "main", "headRef": "fix/legacy-importer", "headSha": "b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1", "reviewDecision": "CHANGES_REQUESTED", "checks": "passing", "failingChecks": [], "mergeable": "CONFLICTING", "updatedAt": "2026-11-07T09:00:00Z" },
+      "worktree": null, "hidden": false, "hiddenReason": "" },
+    { "name": "archive/old-spike", "local": true, "remote": false, "tipSha": "b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8", "unpushed": 4, "unpulled": 0, "parent": "", "baseSha": "f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1", "ahead": 4, "behind": 47, "lastCommitAt": "2026-11-04T12:00:00Z", "status": "no_pr",
+      "pr": null, "worktree": null, "hidden": true, "hiddenReason": "hidden by hand" }
+  ]
+}
