@@ -2,7 +2,7 @@ import { memo, useRef, type FocusEvent, type KeyboardEvent, type MouseEvent, typ
 import { relTime } from '../format'
 import { COMPACT, NORMAL, contentX, dotX, type Geometry } from '../geometry'
 import type { BranchRow, GapRow, HeadRow, MergedRow, Row } from '../layout'
-import { STATUS_LABEL, statusOf, type Anchor, type Branch, type MergedPR, type Snapshot } from '../model'
+import { STATUS_LABEL, statusOf, locationOf, LOCATION_LABEL, type Anchor, type Branch, type MergedPR, type Snapshot } from '../model'
 import { MoreIcon } from './icons'
 import { Rails } from './Rails'
 
@@ -140,6 +140,9 @@ function branchLabel(b: Branch): string {
   const parts = [b.name, STATUS_LABEL[st]]
   if (b.pr) parts.push(`pull request #${b.pr.number}`)
   parts.push(`${b.ahead} ahead`, b.behind === 0 ? 'up to date with main' : `${b.behind} behind`)
+  parts.push(LOCATION_LABEL[locationOf(b)])
+  if (b.unpushed > 0) parts.push(`${b.unpushed} unpushed`)
+  if (b.unpulled > 0) parts.push(`${b.unpulled} not pulled`)
   if (b.worktree?.dirty) parts.push('uncommitted changes')
   if (b.hidden) parts.push('hidden')
   return parts.join(', ')
@@ -165,7 +168,7 @@ const BranchRowView = memo(function BranchRowView({
   const cx = contentX(g, row.depth)
 
   return (
-    <li className={`row row-branch${row.dimmed ? ' is-dim' : ''}${b.pr ? ' has-pr' : ''}`} style={compact ? { height: 32 } : undefined} {...h.li}>
+    <li className={`row row-branch loc-${locationOf(b)}${row.dimmed ? ' is-dim' : ''}${b.pr ? ' has-pr' : ''}`} style={compact ? { height: 32 } : undefined} {...h.li}>
       <Rails
         g={g}
         main={row.main}
@@ -176,6 +179,7 @@ const BranchRowView = memo(function BranchRowView({
         dotY={g.dotY}
         depth={row.depth}
         tone={row.dimmed ? 'dim' : 'normal'}
+        location={locationOf(b)}
       />
       {b.ahead > 0 && (
         <span className="ahead-pill" style={{ left: x - g.dotSize / 2 - 3, top: g.dotY }} aria-hidden="true">
@@ -203,6 +207,25 @@ const BranchRowView = memo(function BranchRowView({
   )
 })
 
+/** Out-of-sync counts between the local branch and its remote counterpart. */
+function Sync({ b }: { b: Branch }) {
+  if (b.unpushed <= 0 && b.unpulled <= 0) return null
+  return (
+    <span className="sync" aria-hidden="true">
+      {b.unpushed > 0 && (
+        <span className="sync-up" title={`${b.unpushed} commit${b.unpushed === 1 ? '' : 's'} not pushed`}>
+          ⇡{b.unpushed}
+        </span>
+      )}
+      {b.unpulled > 0 && (
+        <span className="sync-down" title={`${b.unpulled} commit${b.unpulled === 1 ? '' : 's'} not pulled`}>
+          ⇣{b.unpulled}
+        </span>
+      )}
+    </span>
+  )
+}
+
 function CompactBranch({ b }: { b: Branch }) {
   return (
     <span className="c-line">
@@ -211,6 +234,7 @@ function CompactBranch({ b }: { b: Branch }) {
       </span>
       {b.worktree?.dirty && <span className="c-dirty" aria-hidden="true" />}
       <span className="c-meta" aria-hidden="true">
+        <Sync b={b} />
         {b.pr && <span>#{b.pr.number}</span>}
         <span>↑{b.ahead}</span>
         <span>↓{b.behind}</span>
@@ -228,6 +252,7 @@ function BranchCard({ row }: { row: BranchRow }) {
         <span className="name" title={b.name}>
           {b.name}
         </span>
+        <Sync b={b} />
       </span>
       <span className="meta">
         {b.pr && (
@@ -245,10 +270,6 @@ function BranchCard({ row }: { row: BranchRow }) {
             uncommitted
           </Badge>
         )}
-        {b.unpushed > 0 && <Badge>⇡{b.unpushed} unpushed</Badge>}
-        {b.unpulled > 0 && <Badge>⇣{b.unpulled} unpulled</Badge>}
-        {b.local && !b.remote && <Badge>local only</Badge>}
-        {!b.local && b.remote && <Badge>remote only</Badge>}
         {row.stackedOn && (
           <Badge tone="stack">stacked on {row.stackedOn.prNumber ? `#${row.stackedOn.prNumber}` : row.stackedOn.name}</Badge>
         )}

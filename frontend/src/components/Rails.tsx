@@ -6,6 +6,7 @@
 import type { CSSProperties, ReactElement } from 'react'
 import { dotX, laneX, type Geometry } from '../geometry'
 import type { Connector, Lane, MainDot, MainSegs } from '../layout'
+import type { Location } from '../model'
 
 interface Props {
   g: Geometry
@@ -21,11 +22,13 @@ interface Props {
   depth: number
   /** Extra class for the connector (e.g. dimmed hidden branches). */
   tone?: 'normal' | 'dim'
+  /** Where the row's branch lives; styles its connector (solid / dashed / dotted). */
+  location?: Location
 }
 
 const px = (v: number | string) => (typeof v === 'number' ? `${v}px` : v)
 
-export function Rails({ g, main, lanes, connector, mainDot, splitY, dotY, depth, tone = 'normal' }: Props) {
+export function Rails({ g, main, lanes, connector, mainDot, splitY, dotY, depth, tone = 'normal', location = 'both' }: Props) {
   const x = dotX(g, depth)
   const half = g.laneW / 2
   const parts: ReactElement[] = []
@@ -58,14 +61,14 @@ export function Rails({ g, main, lanes, connector, mainDot, splitY, dotY, depth,
   // The row's own connector.
   if (connector.kind === 'straight') {
     parts.push(
-      <i key="c" className={`seg lane ${tone}`} style={{ left: g.mainX, top: dotY - half, width: x - g.mainX, height: g.laneW }} />,
+      <i key="c" className={`seg lane ${tone} conn-${location}`} style={{ left: g.mainX, top: dotY - half, width: x - g.mainX, height: g.laneW }} />,
     )
   } else if (connector.kind === 'elbow') {
     const fx = laneX(g, connector.from)
     parts.push(
       <i
         key="c"
-        className={`seg elbow ${tone}`}
+        className={`seg elbow ${tone} conn-${location}`}
         style={{ left: fx - half, top: 0, width: x - fx + half, height: dotY + half, borderBottomLeftRadius: fx === x ? 0 : g.elbowR }}
       />,
     )

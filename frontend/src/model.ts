@@ -63,3 +63,18 @@ export function defaultSettings(): Settings {
 
 /** The subset of settings the layout depends on. */
 export type LayoutSettings = Pick<Settings, 'showMerged' | 'showHidden'>
+
+export type Location = 'both' | 'local' | 'remote'
+
+/** Where a branch lives: on both sides, only on this machine, or only on the remote. */
+export function locationOf(b: Pick<Branch, 'local' | 'remote'>): Location {
+  if (b.local && !b.remote) return 'local'
+  if (!b.local && b.remote) return 'remote'
+  return 'both'
+}
+
+export const LOCATION_LABEL: Record<Location, string> = {
+  both: 'local and pushed',
+  local: 'local only, not pushed',
+  remote: 'remote only, not checked out',
+}

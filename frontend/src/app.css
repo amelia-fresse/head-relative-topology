@@ -944,3 +944,70 @@ button {
     transition: none !important;
   }
 }
+
+/* ---- where a branch lives: both (solid), local only (dashed), remote only (ghost, dotted) */
+
+.seg.lane.conn-local {
+  background: repeating-linear-gradient(to right, var(--lane) 0 5px, transparent 5px 9px);
+}
+
+.seg.lane.conn-remote {
+  background: repeating-linear-gradient(to right, var(--lane) 0 2px, transparent 2px 5px);
+}
+
+.seg.elbow.conn-local {
+  border-left-style: dashed;
+  border-bottom-style: dashed;
+}
+
+.seg.elbow.conn-remote {
+  border-left-style: dotted;
+  border-bottom-style: dotted;
+}
+
+.loc-local .card {
+  border-style: dashed;
+  border-color: var(--border-strong);
+}
+
+.loc-remote .card {
+  background: transparent;
+  border-color: transparent;
+}
+
+.loc-remote .hit:hover .card {
+  background: var(--surface);
+  border-color: var(--border);
+}
+
+.loc-remote .card .name,
+.loc-remote .c-line .name {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.loc-remote .dot {
+  opacity: 0.7;
+}
+
+.sync {
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: 4px;
+  margin-left: 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.sync-up {
+  color: var(--st-conflicts);
+}
+
+.sync-down {
+  color: var(--st-review);
+}
+
+.c-meta .sync {
+  margin-left: 0;
+}

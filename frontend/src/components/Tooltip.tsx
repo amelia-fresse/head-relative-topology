@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 import { relTime } from '../format'
-import { STATUS_LABEL, statusOf, type Branch } from '../model'
+import { STATUS_LABEL, statusOf, type Branch, locationOf, LOCATION_LABEL } from '../model'
 import type { MapTarget } from './BranchMap'
 
 export interface TipState {
@@ -113,11 +113,15 @@ function BranchTip({ b, now, mainRef, anchorSha, anchorSubject }: { b: Branch; n
           </div>
         )
       )}
-      {(b.unpushed > 0 || b.unpulled > 0) && (
-        <div className="tip-line">
-          {[b.unpushed > 0 && `${b.unpushed} unpushed`, b.unpulled > 0 && `${b.unpulled} not pulled`].filter(Boolean).join(' · ')}
-        </div>
-      )}
+      <div className="tip-line">
+        {[
+          LOCATION_LABEL[locationOf(b)],
+          b.unpushed > 0 && `${b.unpushed} unpushed`,
+          b.unpulled > 0 && `${b.unpulled} not pulled`,
+        ]
+          .filter(Boolean)
+          .join(' · ')}
+      </div>
       {b.worktree && (
         <div className="tip-line">
           <span className="muted">Worktree </span>
