@@ -195,7 +195,7 @@ function Badge({ children, tone }: { children: ReactNode; tone?: string }) {
 function branchLabel(b: Branch): string {
   const st = statusOf(b)
   const parts = [b.name, STATUS_LABEL[st]]
-  if (b.pr) parts.push(`pull request #${b.pr.number}`)
+  if (b.pr) parts.push(`pull request #${b.pr.number}${b.pr.title ? `: ${b.pr.title}` : ''}`)
   parts.push(`${b.ahead} ahead`, b.behind === 0 ? 'up to date with main' : `${b.behind} behind`)
   parts.push(LOCATION_LABEL[locationOf(b)])
   if (b.unpushed > 0) parts.push(`${b.unpushed} unpushed`)
@@ -301,6 +301,11 @@ function CompactBranch({ b }: { b: Branch }) {
         {b.name}
       </span>
       {b.worktree?.dirty && <span className="c-dirty" aria-hidden="true" />}
+      {b.pr?.title && (
+        <span className="c-title" title={b.pr.title}>
+          {b.pr.title}
+        </span>
+      )}
       <span className="c-meta" aria-hidden="true">
         <Sync b={b} />
         {b.pr && <span>#{b.pr.number}</span>}
@@ -323,6 +328,11 @@ function BranchCard({ row }: { row: BranchRow }) {
         </span>
         <Sync b={b} />
       </span>
+      {b.pr?.title && (
+        <span className="pr-title" title={b.pr.title}>
+          {b.pr.title}
+        </span>
+      )}
       <span className="meta">
         {b.pr && (
           <>

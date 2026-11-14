@@ -595,6 +595,7 @@ button {
 
 .c-line .name {
   flex: 0 1 auto;
+  max-width: 60%;
   font-size: 12px;
   font-weight: 500;
 }
@@ -1071,4 +1072,28 @@ button {
 .head-line .local-tag {
   margin-left: 0;
   color: var(--text);
+}
+
+/* ---- PR titles, always visible */
+
+.pr-title {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  color: var(--text);
+  font-size: 12.5px;
+  line-height: 17px;
+  opacity: 0.85;
+  overflow-wrap: anywhere;
+}
+
+.c-title {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 11.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
