@@ -152,6 +152,7 @@ func TestRoundTrip(t *testing.T) {
 		MergedWindowHours: 12,
 		LastRepo:          filepath.Join(t.TempDir(), "repo"),
 	}
+	st.OpenRepos = []string{st.LastRepo, "/other/repo"}
 	if err := s.SetSettings(st); err != nil {
 		t.Fatal(err)
 	}

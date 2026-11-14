@@ -651,9 +651,14 @@ export class Settings {
     "mergedWindowHours": number;
 
     /**
-     * LastRepo is reopened at startup when no path is given.
+     * LastRepo is the active tab, reopened at startup when no path is given.
      */
     "lastRepo": string;
+
+    /**
+     * OpenRepos are the repositories open as tabs, in tab order.
+     */
+    "openRepos": string[];
 
     /** Creates a new Settings instance. */
     constructor($$source: Partial<Settings> = {}) {
@@ -687,6 +692,9 @@ export class Settings {
         if (!("lastRepo" in $$source)) {
             this["lastRepo"] = "";
         }
+        if (!("openRepos" in $$source)) {
+            this["openRepos"] = [];
+        }
 
         Object.assign(this, $$source);
     }
@@ -695,7 +703,11 @@ export class Settings {
      * Creates a new Settings instance from a string or object.
      */
     static createFrom($$source: any = {}): Settings {
+        const $$createField10_0 = $$createType1;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("openRepos" in $$parsedSource) {
+            $$parsedSource["openRepos"] = $$createField10_0($$parsedSource["openRepos"]);
+        }
         return new Settings($$parsedSource as Partial<Settings>);
     }
 }
@@ -791,6 +803,59 @@ export enum Status {
     StatusApproved = "approved",
     StatusReview = "review",
 };
+
+/**
+ * Tab is one open repository. Every tab is kept up to date in the
+ * background; only the active one is drawn.
+ */
+export class Tab {
+    /**
+     * Path is the repository's main worktree, the tab's identity.
+     */
+    "path": string;
+
+    /**
+     * Name is a short label (the repo name from the slug, else the folder).
+     */
+    "name": string;
+    "slug": string;
+    "active": boolean;
+
+    /**
+     * Attention is the most urgent status among visible branches:
+     * "conflicts", "ci_failing" or "".
+     */
+    "attention": string;
+
+    /** Creates a new Tab instance. */
+    constructor($$source: Partial<Tab> = {}) {
+        if (!("path" in $$source)) {
+            this["path"] = "";
+        }
+        if (!("name" in $$source)) {
+            this["name"] = "";
+        }
+        if (!("slug" in $$source)) {
+            this["slug"] = "";
+        }
+        if (!("active" in $$source)) {
+            this["active"] = false;
+        }
+        if (!("attention" in $$source)) {
+            this["attention"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new Tab instance from a string or object.
+     */
+    static createFrom($$source: any = {}): Tab {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new Tab($$parsedSource as Partial<Tab>);
+    }
+}
 
 export class Worktree {
     "path": string;

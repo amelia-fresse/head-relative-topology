@@ -184,8 +184,24 @@ type Settings struct {
 	PRPollIntervalSec int `json:"prPollIntervalSec" toml:"pr_poll_interval_sec"`
 	// MergedWindowHours: merged PRs newer than this are shown as convergence points.
 	MergedWindowHours int `json:"mergedWindowHours" toml:"merged_window_hours"`
-	// LastRepo is reopened at startup when no path is given.
+	// LastRepo is the active tab, reopened at startup when no path is given.
 	LastRepo string `json:"lastRepo" toml:"last_repo"`
+	// OpenRepos are the repositories open as tabs, in tab order.
+	OpenRepos []string `json:"openRepos" toml:"open_repos"`
+}
+
+// Tab is one open repository. Every tab is kept up to date in the
+// background; only the active one is drawn.
+type Tab struct {
+	// Path is the repository's main worktree, the tab's identity.
+	Path string `json:"path"`
+	// Name is a short label (the repo name from the slug, else the folder).
+	Name   string `json:"name"`
+	Slug   string `json:"slug"`
+	Active bool   `json:"active"`
+	// Attention is the most urgent status among visible branches:
+	// "conflicts", "ci_failing" or "".
+	Attention string `json:"attention"`
 }
 
 // DefaultSettings returns the settings used when no config file exists.
@@ -199,6 +215,7 @@ func DefaultSettings() Settings {
 		FetchIntervalSec:  120,
 		PRPollIntervalSec: 60,
 		MergedWindowHours: 48,
+		OpenRepos:         []string{},
 	}
 }
 

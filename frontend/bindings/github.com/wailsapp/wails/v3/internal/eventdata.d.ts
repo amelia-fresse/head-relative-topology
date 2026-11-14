@@ -13,6 +13,7 @@ declare module "@wailsio/runtime" {
     namespace Events {
         interface CustomEvents {
             "snapshot": model$0.Snapshot;
+            "tabs": model$0.Tab[];
         }
     }
 }

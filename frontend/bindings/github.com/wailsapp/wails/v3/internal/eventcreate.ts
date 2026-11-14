@@ -13,10 +13,13 @@ import * as model$0 from "../../../../amelia-fresse/head-relative-topology/inter
 function configure() {
     Object.freeze(Object.assign($Create.Events, {
         "snapshot": $$createType0,
+        "tabs": $$createType2,
     }));
 }
 
 // Private type creation functions
 const $$createType0 = model$0.Snapshot.createFrom;
+const $$createType1 = model$0.Tab.createFrom;
+const $$createType2 = $Create.Array($$createType1);
 
 configure();

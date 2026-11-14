@@ -1,4 +1,4 @@
-import type { Settings, Snapshot } from '../model'
+import type { Settings, Snapshot, Tab } from '../model'
 
 /**
  * Backend is everything the UI needs from the Go service. Two implementations:
@@ -9,6 +9,11 @@ export interface Backend {
   snapshot(): Promise<Snapshot>
   refresh(fetch: boolean): Promise<Snapshot>
   pickRepo(): Promise<Snapshot>
+  /** Open repositories in tab order. */
+  tabs(): Promise<Tab[]>
+  switchRepo(path: string): Promise<Snapshot>
+  /** Closes a tab; returns the snapshot of the tab that is active afterwards. */
+  closeRepo(path: string): Promise<Snapshot>
   getSettings(): Promise<Settings>
   saveSettings(s: Settings): Promise<void>
   hideBranch(name: string): Promise<Snapshot>
@@ -17,6 +22,7 @@ export interface Backend {
   copyText(text: string): Promise<void>
   /** Subscribes to pushed snapshots; returns an unsubscribe function. */
   onSnapshot(cb: (s: Snapshot) => void): () => void
+  onTabs(cb: (t: Tab[]) => void): () => void
 }
 
 /** A snapshot without a repository path means "no repository open". */

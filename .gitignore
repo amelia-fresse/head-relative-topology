@@ -3,3 +3,5 @@
 bin
 frontend/dist
 frontend/node_modules
+/head-relative-topology
+/head-relative-topology.exe

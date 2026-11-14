@@ -8,6 +8,7 @@ Built for AI-agent-driven development, where many branches move in parallel and 
 - One point per branch; `origin/main` collapses to its divergence and convergence points.
 - Your local `main` is a diamond on the line, with its unpushed / not-pulled counts.
 - Toggle "only remote branches" to leave local-only work out of the map.
+- One tab per repository; every tab stays live in the background and flags conflicts or failing CI.
 - Reads your local repo with `git` and pull requests with `gh` (works with private repos via your `gh auth`).
 - Hide branches you don't care about (by name, glob, or automatic rules). Rules stay private to you.
 - Themes: default, babydoll, dolly. Compact mode for narrow windows.
@@ -29,7 +30,11 @@ wails3 dev        # run with hot reload
 wails3 build      # produce bin/hrt
 ```
 
-Run `hrt [path]`. Without a path it reopens the last repository you opened, or the current directory the first time.
+Run `hrt [path]`. It reopens the tabs from last time; a path opens (or switches to) that repository, and the
+current directory is used only when nothing else is open.
+
+Shortcuts: `o` open a repository in a new tab, `[` / `]` previous / next tab, `1`–`9` jump to a tab, `r` refresh,
+`c` compact, `m` merged PRs, `l` only remote branches, `h` hidden branches, `t` theme.
 
 ## License
 

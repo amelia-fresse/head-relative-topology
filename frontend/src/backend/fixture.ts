@@ -2,7 +2,7 @@
 // localStorage and applies hide/unhide locally, so the full UI works in a
 // plain browser (`npm run dev`, then open with ?fixture).
 import { fixtureSnapshot, shiftTimes, type FixtureName } from '../dev/fixtures'
-import { defaultSettings, type RepoConfig, type Settings, type Snapshot } from '../model'
+import { defaultSettings, type RepoConfig, type Settings, type Snapshot, type Tab } from '../model'
 import type { Backend } from './types'
 
 const SETTINGS_KEY = 'hrt.fixture.settings'
@@ -50,10 +50,42 @@ function urlOverrides(): Partial<Settings> {
   return out
 }
 
+/** A fixture snapshot moved to another repository path / slug, for extra tabs. */
+function asRepo(name: FixtureName, slug: string): any {
+  const s = fixtureSnapshot(name) as any
+  s.repo = { ...s.repo, slug, path: `/home/dev/${slug.split('/')[1]}` }
+  return s
+}
+
+function attentionOf(raw: any): string {
+  const st = (raw.branches as any[]).filter((b) => !b.hidden).map((b) => b.status)
+  return st.includes('conflicts') ? 'conflicts' : st.includes('ci_failing') ? 'ci_failing' : ''
+}
+
 export function createFixtureBackend(name: FixtureName = 'sample'): Backend {
-  // The raw fixture, used as the source of truth for everything except hide rules.
-  const raw = fixtureSnapshot(name) as any
+  // Open tabs; each raw fixture is the source of truth for everything except hide rules.
+  const repos: any[] =
+    name === 'norepo' ? [] : [fixtureSnapshot(name) as any, asRepo('empty', 'acme/backend-api'), asRepo('many', 'acme/big-monorepo')]
+  let active = repos.length > 0 ? 0 : -1
+  const norepo = fixtureSnapshot('norepo') as any
+  const current = () => (active >= 0 ? repos[active] : norepo)
+  let raw = current()
   const listeners = new Set<(s: Snapshot) => void>()
+  const tabListeners = new Set<(t: Tab[]) => void>()
+  const tabs = (): Tab[] =>
+    repos.map((r, i) => ({
+      path: r.repo.path,
+      name: (r.repo.slug || r.repo.path).split('/').pop(),
+      slug: r.repo.slug,
+      active: i === active,
+      attention: attentionOf(r),
+    })) as Tab[]
+  const select = (i: number) => {
+    active = i
+    raw = current()
+    const t = tabs()
+    tabListeners.forEach((l) => l(t))
+  }
   let fetchedAt = Date.now() - 2 * 60_000
 
   const initialConfig = (): RepoConfig => ({
@@ -114,10 +146,29 @@ export function createFixtureBackend(name: FixtureName = 'sample'): Backend {
     },
     pickRepo: async () => {
       await delay(200)
-      // Pretend the user picked the sample repository.
-      Object.assign(raw, fixtureSnapshot('sample'))
-      config = load<RepoConfig>(CONFIG_KEY) ?? initialConfig()
+      // Pretend the user picked another repository.
+      const picked = asRepo('sample', 'acme/docs-site')
+      let i = repos.findIndex((r) => r.repo.path === picked.repo.path)
+      if (i < 0) i = repos.push(picked) - 1
+      select(i)
       return emit()
+    },
+    tabs: async () => tabs(),
+    switchRepo: async (path) => {
+      const i = repos.findIndex((r) => r.repo.path === path)
+      if (i < 0) throw new Error(`${path} is not open`)
+      select(i)
+      return build()
+    },
+    closeRepo: async (path) => {
+      const i = repos.findIndex((r) => r.repo.path === path)
+      if (i < 0) return build()
+      const wasActive = i === active
+      repos.splice(i, 1)
+      if (repos.length === 0) select(-1)
+      else if (wasActive) select(Math.min(i, repos.length - 1))
+      else select(active > i ? active - 1 : active)
+      return build()
     },
     getSettings: async () => ({ ...defaultSettings(), ...(load<Partial<Settings>>(SETTINGS_KEY) ?? {}), ...urlOverrides() }),
     saveSettings: async (s) => store(SETTINGS_KEY, s),
@@ -138,6 +189,10 @@ export function createFixtureBackend(name: FixtureName = 'sample'): Backend {
     onSnapshot: (cb) => {
       listeners.add(cb)
       return () => listeners.delete(cb)
+    },
+    onTabs: (cb) => {
+      tabListeners.add(cb)
+      return () => tabListeners.delete(cb)
     },
   }
 }

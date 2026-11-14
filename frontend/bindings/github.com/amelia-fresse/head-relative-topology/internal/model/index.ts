@@ -14,5 +14,6 @@ export {
     Settings,
     Snapshot,
     Status,
+    Tab,
     Worktree
 } from "./models.js";

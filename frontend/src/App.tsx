@@ -4,11 +4,12 @@ import { BranchMap, type MapActions, type MapTarget } from './components/BranchM
 import { Banners, EmptyMap, ErrorState, HiddenToggle, Loading, LocalOnlyNote, NoRepo, type Notice } from './components/Chrome'
 import { ContextMenu, type MenuItem, type MenuState } from './components/ContextMenu'
 import { Header } from './components/Header'
+import { TabBar } from './components/TabBar'
 import { CopyIcon, EyeIcon, EyeOffIcon, ExternalIcon } from './components/icons'
 import { Tooltip, type TipState } from './components/Tooltip'
 import { useLatest, useNow, useShortcuts } from './hooks'
 import { computeLayout } from './layout'
-import { defaultSettings, nextTheme, themeOf, type Settings, type Snapshot } from './model'
+import { defaultSettings, nextTheme, themeOf, type Settings, type Snapshot, type Tab } from './model'
 
 type Phase = { kind: 'loading' } | { kind: 'error'; message: string } | { kind: 'ready' }
 
@@ -17,6 +18,7 @@ const TIP_DELAY_MS = 450
 export default function App() {
   const [backend, setBackend] = useState<Backend | null>(null)
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null)
+  const [tabs, setTabs] = useState<Tab[]>([])
   const [settings, setSettings] = useState<Settings>(defaultSettings)
   const [phase, setPhase] = useState<Phase>({ kind: 'loading' })
   const [notices, setNotices] = useState<Notice[]>([])
@@ -30,6 +32,8 @@ export default function App() {
   const settingsRef = useLatest(settings)
   const backendRef = useLatest(backend)
   const menuOpenRef = useLatest(menu !== null)
+  // Path of the tab being drawn; pushed snapshots of other repos are ignored.
+  const activePathRef = useRef<string | null>(null)
   const tipTimer = useRef<number | undefined>(undefined)
 
   const notify = useCallback((tone: Notice['tone'], text: string) => {
@@ -44,14 +48,19 @@ export default function App() {
       const st = await c.backend.getSettings().catch(() => defaultSettings())
       setSettings({ ...defaultSettings(), ...st })
       setBackend(c.backend)
+      activePathRef.current = c.snapshot.repo?.path || null
       setSnapshot(c.snapshot)
+      c.backend.tabs().then(setTabs, () => {})
       if (c.fallbackReason) notify('info', c.fallbackReason)
       setPhase({ kind: 'ready' })
     } catch (e) {
       // Keep a backend around so "Open another repository" and pushed snapshots still work.
       const b = createWailsBackend()
       setBackend(b)
-      b.getSettings().then((st) => setSettings({ ...defaultSettings(), ...st }), () => {})
+      b.getSettings().then(
+        (st) => setSettings({ ...defaultSettings(), ...st }),
+        () => {},
+      )
       setPhase({ kind: 'error', message: errorMessage(e) })
     }
   }, [notify])
@@ -62,11 +71,28 @@ export default function App() {
 
   useEffect(() => {
     if (!backend) return
-    return backend.onSnapshot((s) => {
+    const offSnap = backend.onSnapshot((s) => {
+      const active = activePathRef.current
+      if (active && s.repo?.path && s.repo.path !== active) return
       setSnapshot(s)
       setPhase({ kind: 'ready' })
     })
+    const offTabs = backend.onTabs((t) => {
+      setTabs(t)
+      activePathRef.current = t.find((x) => x.active)?.path ?? null
+    })
+    return () => {
+      offSnap()
+      offTabs()
+    }
   }, [backend])
+
+  /** Shows a snapshot returned by a tab action and makes its repo the drawn one. */
+  const showSnapshot = useCallback((s: Snapshot) => {
+    activePathRef.current = s.repo?.path || null
+    setSnapshot(s)
+    setPhase({ kind: 'ready' })
+  }, [])
 
   // --- settings --------------------------------------------------------------
   const theme = themeOf(settings)
@@ -90,12 +116,16 @@ export default function App() {
     setRefreshing(true)
     b.refresh(true)
       .then((s) => {
-        setSnapshot(s)
-        setPhase({ kind: 'ready' })
+        if (!activePathRef.current || s.repo?.path === activePathRef.current) showSnapshot(s)
       })
       .catch((e) => notify('error', `Refresh failed: ${errorMessage(e)}`))
       .finally(() => setRefreshing(false))
-  }, [backendRef, refreshing, notify])
+  }, [backendRef, refreshing, notify, showSnapshot])
+
+  const hideTip = useCallback(() => {
+    window.clearTimeout(tipTimer.current)
+    setTip(null)
+  }, [])
 
   const pickRepo = useCallback(() => {
     const b = backendRef.current
@@ -103,14 +133,52 @@ export default function App() {
     setPicking(true)
     b.pickRepo()
       .then((s) => {
-        if (hasRepo(s)) {
-          setSnapshot(s)
-          setPhase({ kind: 'ready' })
-        }
+        if (hasRepo(s)) showSnapshot(s)
+        return b.tabs().then(setTabs)
       })
       .catch((e) => notify('error', `Couldn’t open that folder: ${errorMessage(e)}`))
       .finally(() => setPicking(false))
-  }, [backendRef, notify])
+  }, [backendRef, notify, showSnapshot])
+
+  const switchTab = useCallback(
+    (path: string) => {
+      const b = backendRef.current
+      if (!b || path === activePathRef.current) return
+      activePathRef.current = path
+      setTabs((ts) => ts.map((t) => ({ ...t, active: t.path === path })))
+      hideTip()
+      b.switchRepo(path)
+        .then(showSnapshot)
+        .catch((e) => notify('error', `Couldn’t switch repository: ${errorMessage(e)}`))
+    },
+    [backendRef, notify, showSnapshot, hideTip],
+  )
+
+  const closeTab = useCallback(
+    (path: string) => {
+      const b = backendRef.current
+      if (!b) return
+      hideTip()
+      b.closeRepo(path)
+        .then((s) => {
+          showSnapshot(s)
+          return b.tabs().then(setTabs)
+        })
+        .catch((e) => notify('error', `Couldn’t close the tab: ${errorMessage(e)}`))
+    },
+    [backendRef, notify, showSnapshot, hideTip],
+  )
+
+  const tabsRef = useLatest(tabs)
+  const stepTab = useCallback(
+    (delta: number) => {
+      const ts = tabsRef.current
+      const i = ts.findIndex((t) => t.active)
+      if (ts.length < 2 || i < 0) return
+      switchTab(ts[(i + delta + ts.length) % ts.length].path)
+    },
+    [tabsRef, switchTab],
+  )
 
   const openURL = useCallback(
     (url: string) => {
@@ -142,26 +210,49 @@ export default function App() {
   )
 
   // --- map interactions ------------------------------------------------------
-  const hideTip = useCallback(() => {
-    window.clearTimeout(tipTimer.current)
-    setTip(null)
-  }, [])
 
   const actions = useMemo<MapActions>(() => {
     const menuItems = (t: MapTarget): MenuItem[] => {
       if (t.kind === 'merged') {
         return [
-          { label: 'Open pull request', icon: <ExternalIcon size={14} />, onSelect: () => openURL(t.pr.url), disabled: !t.pr.url },
-          { label: 'Copy branch name', icon: <CopyIcon size={14} />, onSelect: () => copy(t.pr.headRef), disabled: !t.pr.headRef },
+          {
+            label: 'Open pull request',
+            icon: <ExternalIcon size={14} />,
+            onSelect: () => openURL(t.pr.url),
+            disabled: !t.pr.url,
+          },
+          {
+            label: 'Copy branch name',
+            icon: <CopyIcon size={14} />,
+            onSelect: () => copy(t.pr.headRef),
+            disabled: !t.pr.headRef,
+          },
         ]
       }
       const b = t.branch
       return [
-        { label: 'Open pull request', icon: <ExternalIcon size={14} />, onSelect: () => b.pr && openURL(b.pr.url), disabled: !b.pr },
-        { label: 'Copy branch name', icon: <CopyIcon size={14} />, onSelect: () => copy(b.name) },
+        {
+          label: 'Open pull request',
+          icon: <ExternalIcon size={14} />,
+          onSelect: () => b.pr && openURL(b.pr.url),
+          disabled: !b.pr,
+        },
+        {
+          label: 'Copy branch name',
+          icon: <CopyIcon size={14} />,
+          onSelect: () => copy(b.name),
+        },
         b.hidden
-          ? { label: 'Unhide branch', icon: <EyeIcon size={14} />, onSelect: () => setHidden(b.name, false) }
-          : { label: 'Hide branch', icon: <EyeOffIcon size={14} />, onSelect: () => setHidden(b.name, true) },
+          ? {
+              label: 'Unhide branch',
+              icon: <EyeIcon size={14} />,
+              onSelect: () => setHidden(b.name, false),
+            }
+          : {
+              label: 'Hide branch',
+              icon: <EyeOffIcon size={14} />,
+              onSelect: () => setHidden(b.name, true),
+            },
       ]
     }
     const showMenu: MapActions['menu'] = (t, at, returnFocus) => {
@@ -200,7 +291,14 @@ export default function App() {
   // --- derived ---------------------------------------------------------------
   const ready = phase.kind === 'ready' && hasRepo(snapshot)
   const layout = useMemo(
-    () => (snapshot && ready ? computeLayout(snapshot, { showMerged: settings.showMerged, showHidden: settings.showHidden, onlyRemote: settings.onlyRemote }) : null),
+    () =>
+      snapshot && ready
+        ? computeLayout(snapshot, {
+            showMerged: settings.showMerged,
+            showHidden: settings.showHidden,
+            onlyRemote: settings.onlyRemote,
+          })
+        : null,
     [snapshot, ready, settings.showMerged, settings.showHidden, settings.onlyRemote],
   )
 
@@ -213,6 +311,11 @@ export default function App() {
       t: () => updateSettings({ theme: nextTheme(settingsRef.current.theme) }),
       h: () => updateSettings({ showHidden: !settingsRef.current.showHidden }),
       l: () => updateSettings({ onlyRemote: !settingsRef.current.onlyRemote }),
+      '[': () => stepTab(-1),
+      ']': () => stepTab(1),
+      ...Object.fromEntries(
+        Array.from({ length: 9 }, (_, i) => [String(i + 1), () => tabsRef.current[i] && switchTab(tabsRef.current[i].path)]),
+      ),
       escape: hideTip,
     },
     menu === null,
@@ -229,18 +332,20 @@ export default function App() {
 
   return (
     <div className={`app density-${settings.compact ? 'compact' : 'normal'}`}>
-      <Header
-        snapshot={hasRepo(snapshot) ? snapshot : null}
-        settings={{ ...settings, theme }}
-        now={now}
-        refreshing={refreshing}
-        onRefresh={refresh}
-        onToggleCompact={() => updateSettings({ compact: !settings.compact })}
-        onToggleMerged={() => updateSettings({ showMerged: !settings.showMerged })}
-        onToggleOnlyRemote={() => updateSettings({ onlyRemote: !settings.onlyRemote })}
-        onCycleTheme={() => updateSettings({ theme: nextTheme(settings.theme) })}
-        onOpenRepo={pickRepo}
-      />
+      <div className="topbar">
+        <Header
+          snapshot={hasRepo(snapshot) ? snapshot : null}
+          settings={{ ...settings, theme }}
+          now={now}
+          refreshing={refreshing}
+          onRefresh={refresh}
+          onToggleCompact={() => updateSettings({ compact: !settings.compact })}
+          onToggleMerged={() => updateSettings({ showMerged: !settings.showMerged })}
+          onToggleOnlyRemote={() => updateSettings({ onlyRemote: !settings.onlyRemote })}
+          onCycleTheme={() => updateSettings({ theme: nextTheme(settings.theme) })}
+        />
+        {tabs.length > 0 && <TabBar tabs={tabs} onSelect={switchTab} onClose={closeTab} onAdd={pickRepo} />}
+      </div>
       <Banners notices={allNotices} onDismiss={dismiss} />
       <main className="content">
         {phase.kind === 'loading' && <Loading />}

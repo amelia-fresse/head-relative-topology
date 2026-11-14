@@ -15,11 +15,21 @@ import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Cr
 import * as model$0 from "../model/models.js";
 
 /**
- * GetRepoConfig returns the hide rules for the current repository.
+ * CloseRepo closes the tab for path. When it was active, the next tab (or
+ * the previous one) becomes active. Returns the active snapshot afterwards.
+ */
+export function CloseRepo(path: string): $CancellablePromise<model$0.Snapshot> {
+    return $Call.ByID(2745226837, path).then(($result: any) => {
+        return $$createType0($result);
+    });
+}
+
+/**
+ * GetRepoConfig returns the hide rules for the active repository.
  */
 export function GetRepoConfig(): $CancellablePromise<model$0.RepoConfig> {
     return $Call.ByID(3224950331).then(($result: any) => {
-        return $$createType0($result);
+        return $$createType1($result);
     });
 }
 
@@ -28,7 +38,7 @@ export function GetRepoConfig(): $CancellablePromise<model$0.RepoConfig> {
  */
 export function GetSettings(): $CancellablePromise<model$0.Settings> {
     return $Call.ByID(3252635116).then(($result: any) => {
-        return $$createType1($result);
+        return $$createType2($result);
     });
 }
 
@@ -37,16 +47,17 @@ export function GetSettings(): $CancellablePromise<model$0.Settings> {
  */
 export function HideBranch(name: string): $CancellablePromise<model$0.Snapshot> {
     return $Call.ByID(2955779159, name).then(($result: any) => {
-        return $$createType2($result);
+        return $$createType0($result);
     });
 }
 
 /**
- * OpenRepo switches to the repository containing path.
+ * OpenRepo opens the repository containing path in a tab (reusing its tab
+ * when already open) and makes it active.
  */
 export function OpenRepo(path: string): $CancellablePromise<model$0.Snapshot> {
     return $Call.ByID(4220292371, path).then(($result: any) => {
-        return $$createType2($result);
+        return $$createType0($result);
     });
 }
 
@@ -58,31 +69,32 @@ export function OpenURL(url: string): $CancellablePromise<void> {
 }
 
 /**
- * PickRepo shows a folder picker and opens the chosen repository. When the
- * user cancels it returns the current snapshot unchanged.
+ * PickRepo shows a folder picker and opens the chosen repository in a tab.
+ * When the user cancels it returns the current snapshot unchanged.
  */
 export function PickRepo(): $CancellablePromise<model$0.Snapshot> {
     return $Call.ByID(3774444702).then(($result: any) => {
-        return $$createType2($result);
+        return $$createType0($result);
     });
 }
 
 /**
- * Refresh recomputes the snapshot; fetch=true runs `git fetch` first.
+ * Refresh recomputes the active tab; fetch=true runs `git fetch` first.
  * GitHub data is always re-queried.
  */
 export function Refresh(fetch: boolean): $CancellablePromise<model$0.Snapshot> {
     return $Call.ByID(966950682, fetch).then(($result: any) => {
-        return $$createType2($result);
+        return $$createType0($result);
     });
 }
 
 /**
- * SaveRepoConfig persists hide rules and returns the updated snapshot.
+ * SaveRepoConfig persists hide rules for the active repository and returns
+ * the updated snapshot.
  */
 export function SaveRepoConfig(cfg: model$0.RepoConfig): $CancellablePromise<model$0.Snapshot> {
     return $Call.ByID(1144595744, cfg).then(($result: any) => {
-        return $$createType2($result);
+        return $$createType0($result);
     });
 }
 
@@ -94,11 +106,29 @@ export function SaveSettings(st: model$0.Settings): $CancellablePromise<void> {
 }
 
 /**
- * Snapshot returns the latest snapshot, computing one if needed.
+ * Snapshot returns the latest snapshot of the active tab, computing one if needed.
  */
 export function Snapshot(): $CancellablePromise<model$0.Snapshot> {
     return $Call.ByID(3024655855).then(($result: any) => {
-        return $$createType2($result);
+        return $$createType0($result);
+    });
+}
+
+/**
+ * SwitchRepo makes the tab for path active and returns its snapshot.
+ */
+export function SwitchRepo(path: string): $CancellablePromise<model$0.Snapshot> {
+    return $Call.ByID(1094145455, path).then(($result: any) => {
+        return $$createType0($result);
+    });
+}
+
+/**
+ * Tabs lists the open repositories in tab order.
+ */
+export function Tabs(): $CancellablePromise<model$0.Tab[]> {
+    return $Call.ByID(984064503).then(($result: any) => {
+        return $$createType4($result);
     });
 }
 
@@ -107,11 +137,13 @@ export function Snapshot(): $CancellablePromise<model$0.Snapshot> {
  */
 export function UnhideBranch(name: string): $CancellablePromise<model$0.Snapshot> {
     return $Call.ByID(2590588200, name).then(($result: any) => {
-        return $$createType2($result);
+        return $$createType0($result);
     });
 }
 
 // Private type creation functions
-const $$createType0 = model$0.RepoConfig.createFrom;
-const $$createType1 = model$0.Settings.createFrom;
-const $$createType2 = model$0.Snapshot.createFrom;
+const $$createType0 = model$0.Snapshot.createFrom;
+const $$createType1 = model$0.RepoConfig.createFrom;
+const $$createType2 = model$0.Settings.createFrom;
+const $$createType3 = model$0.Tab.createFrom;
+const $$createType4 = $Create.Array($$createType3);

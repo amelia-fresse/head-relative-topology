@@ -1,6 +1,6 @@
-import { baseName, relTime } from '../format'
+import { relTime } from '../format'
 import type { Settings, Snapshot } from '../model'
-import { CloudIcon, CompactIcon, FolderIcon, MergeIcon, RefreshIcon, ThemeIcon } from './icons'
+import { CloudIcon, CompactIcon, MergeIcon, RefreshIcon, ThemeIcon } from './icons'
 
 interface Props {
   snapshot: Snapshot | null
@@ -12,14 +12,12 @@ interface Props {
   onToggleMerged(): void
   onToggleOnlyRemote(): void
   onCycleTheme(): void
-  onOpenRepo(): void
 }
 
 const THEME_LABEL: Record<string, string> = { default: 'Default', babydoll: 'Babydoll', dolly: 'Dolly' }
 
-export function Header({ snapshot, settings, now, refreshing, onRefresh, onToggleCompact, onToggleMerged, onToggleOnlyRemote, onCycleTheme, onOpenRepo }: Props) {
+export function Header({ snapshot, settings, now, refreshing, onRefresh, onToggleCompact, onToggleMerged, onToggleOnlyRemote, onCycleTheme }: Props) {
   const repo = snapshot?.repo
-  const repoName = repo ? repo.slug || (repo.path ? baseName(repo.path) : '') : ''
   const fetched = snapshot ? relTime(snapshot.fetchedAt, now) : null
   const themeLabel = THEME_LABEL[settings.theme] ?? settings.theme
   return (
@@ -29,24 +27,10 @@ export function Header({ snapshot, settings, now, refreshing, onRefresh, onToggl
           <span className="app-name" title="HEAD-Relative Topology">
             hrt
           </span>
-          {repoName && (
-            <span className="repo" title={repo?.path}>
-              {repoName}
-            </span>
-          )}
         </div>
         {snapshot && repo?.path && <div className="fetched">{fetched ? `fetched ${fetched}` : 'not fetched yet'}</div>}
       </div>
       <div className="header-actions">
-        <button
-          type="button"
-          className="icon-btn"
-          onClick={onOpenRepo}
-          aria-label="Open another repository"
-          title="Open another repository (o)"
-        >
-          <FolderIcon />
-        </button>
         <button
           type="button"
           className={`icon-btn${refreshing ? ' is-busy' : ''}`}

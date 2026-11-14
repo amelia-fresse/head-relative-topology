@@ -11,10 +11,11 @@ import type {
   RepoConfig,
   Settings,
   Snapshot,
+  Tab,
   Worktree,
 } from '../bindings/github.com/amelia-fresse/head-relative-topology/internal/model/models'
 
-export type { Anchor, Branch, Commit, LocalMain, MergedPR, PullRequest, RepoConfig, Settings, Snapshot, Worktree }
+export type { Anchor, Branch, Commit, LocalMain, MergedPR, PullRequest, RepoConfig, Settings, Snapshot, Tab, Worktree }
 
 export type StatusKey = 'no_pr' | 'draft' | 'conflicts' | 'ci_failing' | 'approved' | 'review'
 
@@ -60,6 +61,7 @@ export function defaultSettings(): Settings {
     prPollIntervalSec: 60,
     mergedWindowHours: 48,
     lastRepo: '',
+    openRepos: [],
   }
 }
 

@@ -209,6 +209,9 @@ func normalizeSettings(st model.Settings) model.Settings {
 	if st.MergedWindowHours < 0 {
 		st.MergedWindowHours = def.MergedWindowHours
 	}
+	if st.OpenRepos == nil {
+		st.OpenRepos = []string{}
+	}
 	return st
 }
 
