@@ -6,6 +6,50 @@
 import { Create as $Create } from "@wailsio/runtime";
 
 /**
+ * AgentThread is a T3 Code thread working on a branch.
+ */
+export class AgentThread {
+    "id": string;
+    "title": string;
+
+    /**
+     * State: "running", "waiting" (needs you), "failed" or "idle".
+     */
+    "state": string;
+    "link": string;
+    "updatedAt": string;
+
+    /** Creates a new AgentThread instance. */
+    constructor($$source: Partial<AgentThread> = {}) {
+        if (!("id" in $$source)) {
+            this["id"] = "";
+        }
+        if (!("title" in $$source)) {
+            this["title"] = "";
+        }
+        if (!("state" in $$source)) {
+            this["state"] = "";
+        }
+        if (!("link" in $$source)) {
+            this["link"] = "";
+        }
+        if (!("updatedAt" in $$source)) {
+            this["updatedAt"] = "0001-01-01T00:00:00.000Z";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new AgentThread instance from a string or object.
+     */
+    static createFrom($$source: any = {}): AgentThread {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new AgentThread($$parsedSource as Partial<AgentThread>);
+    }
+}
+
+/**
  * Anchor is one commit on main worth showing: HEAD, a divergence point
  * (merge-base of at least one main-based branch) or a convergence point (a
  * merged PR landed as this commit). A single commit can be several of these.
@@ -128,6 +172,11 @@ export class Branch {
     "worktree": Worktree | null;
 
     /**
+     * Thread is the T3 Code agent thread working on this branch, if any.
+     */
+    "thread": AgentThread | null;
+
+    /**
      * Hidden is set by the user's hide rules; HiddenReason says which rule.
      */
     "hidden": boolean;
@@ -177,6 +226,9 @@ export class Branch {
         if (!("worktree" in $$source)) {
             this["worktree"] = null;
         }
+        if (!("thread" in $$source)) {
+            this["thread"] = null;
+        }
         if (!("hidden" in $$source)) {
             this["hidden"] = false;
         }
@@ -193,12 +245,16 @@ export class Branch {
     static createFrom($$source: any = {}): Branch {
         const $$createField12_0 = $$createType5;
         const $$createField13_0 = $$createType7;
+        const $$createField14_0 = $$createType9;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("pr" in $$parsedSource) {
             $$parsedSource["pr"] = $$createField12_0($$parsedSource["pr"]);
         }
         if ("worktree" in $$parsedSource) {
             $$parsedSource["worktree"] = $$createField13_0($$parsedSource["worktree"]);
+        }
+        if ("thread" in $$parsedSource) {
+            $$parsedSource["thread"] = $$createField14_0($$parsedSource["thread"]);
         }
         return new Branch($$parsedSource as Partial<Branch>);
     }
@@ -347,8 +403,8 @@ export class MainLine {
      */
     static createFrom($$source: any = {}): MainLine {
         const $$createField1_0 = $$createType0;
-        const $$createField2_0 = $$createType9;
-        const $$createField4_0 = $$createType11;
+        const $$createField2_0 = $$createType11;
+        const $$createField4_0 = $$createType13;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("head" in $$parsedSource) {
             $$parsedSource["head"] = $$createField1_0($$parsedSource["head"]);
@@ -766,9 +822,9 @@ export class Snapshot {
      * Creates a new Snapshot instance from a string or object.
      */
     static createFrom($$source: any = {}): Snapshot {
-        const $$createField0_0 = $$createType12;
-        const $$createField1_0 = $$createType13;
-        const $$createField2_0 = $$createType15;
+        const $$createField0_0 = $$createType14;
+        const $$createField1_0 = $$createType15;
+        const $$createField2_0 = $$createType17;
         const $$createField5_0 = $$createType1;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("repo" in $$parsedSource) {
@@ -899,11 +955,13 @@ const $$createType4 = PullRequest.createFrom;
 const $$createType5 = $Create.Nullable($$createType4);
 const $$createType6 = Worktree.createFrom;
 const $$createType7 = $Create.Nullable($$createType6);
-const $$createType8 = Anchor.createFrom;
-const $$createType9 = $Create.Array($$createType8);
-const $$createType10 = LocalMain.createFrom;
-const $$createType11 = $Create.Nullable($$createType10);
-const $$createType12 = RepoInfo.createFrom;
-const $$createType13 = MainLine.createFrom;
-const $$createType14 = Branch.createFrom;
-const $$createType15 = $Create.Array($$createType14);
+const $$createType8 = AgentThread.createFrom;
+const $$createType9 = $Create.Nullable($$createType8);
+const $$createType10 = Anchor.createFrom;
+const $$createType11 = $Create.Array($$createType10);
+const $$createType12 = LocalMain.createFrom;
+const $$createType13 = $Create.Nullable($$createType12);
+const $$createType14 = RepoInfo.createFrom;
+const $$createType15 = MainLine.createFrom;
+const $$createType16 = Branch.createFrom;
+const $$createType17 = $Create.Array($$createType16);

@@ -18,6 +18,7 @@ import (
 	"github.com/amelia-fresse/head-relative-topology/internal/gitscan"
 	"github.com/amelia-fresse/head-relative-topology/internal/model"
 	"github.com/amelia-fresse/head-relative-topology/internal/snapshot"
+	"github.com/amelia-fresse/head-relative-topology/internal/t3"
 	"github.com/amelia-fresse/head-relative-topology/internal/watch"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
@@ -40,8 +41,10 @@ const (
 	// localRescanEvery re-scans even without ref changes, so worktree dirty
 	// state stays fresh (file edits don't touch .git/refs).
 	localRescanEvery = 15 * time.Second
-	tick             = 5 * time.Second
-	watchDebounce    = 300 * time.Millisecond
+	// threadsEvery is how often T3 Code threads are re-read per tab.
+	threadsEvery  = 20 * time.Second
+	tick          = 5 * time.Second
+	watchDebounce = 300 * time.Millisecond
 )
 
 func init() {
@@ -74,6 +77,12 @@ type repoState struct {
 	lastFetchAt time.Time // last attempt, success or not
 	lastLocalAt time.Time
 	fetchWarn   string
+
+	// T3 Code threads of this repository, refreshed every threadsEvery.
+	threads         []t3.Thread
+	threadsAt       time.Time
+	threadsInflight atomic.Bool
+	threadsErr      string // last error, logged once
 }
 
 // Service is bound to the frontend; every exported method becomes a binding.
@@ -86,6 +95,8 @@ type Service struct {
 	settings model.Settings
 	tabs     []*repoState
 	active   *repoState
+	// t3 reads T3 Code threads; nil when T3 Code isn't installed.
+	t3 *t3.Client
 
 	trigger chan struct{}
 	cancel  context.CancelFunc
@@ -112,6 +123,10 @@ func (s *Service) ServiceStartup(ctx context.Context, _ application.ServiceOptio
 		} else {
 			log.Printf("hrt: config: %v (using defaults)", err)
 		}
+	}
+
+	if cli := t3.Find(); cli != "" {
+		s.t3 = t3.New(cli)
 	}
 
 	loopCtx, cancel := context.WithCancel(context.Background())
@@ -575,8 +590,80 @@ func (s *Service) loop(ctx context.Context) {
 				d.st.dirty.Store(false)
 				s.rebuildAsync(ctx, d.st, d.fetch, d.prs)
 			}
+			s.refreshThreadsDue(ctx, now)
 		}
 	}
+}
+
+// refreshThreadsDue re-reads T3 Code threads for tabs whose list is stale.
+func (s *Service) refreshThreadsDue(ctx context.Context, now time.Time) {
+	if s.t3 == nil {
+		return
+	}
+	s.mu.Lock()
+	var due []*repoState
+	for _, st := range s.tabs {
+		if now.Sub(st.threadsAt) >= threadsEvery {
+			due = append(due, st)
+		}
+	}
+	s.mu.Unlock()
+	for _, st := range due {
+		if st.threadsInflight.Swap(true) {
+			continue
+		}
+		go func(st *repoState) {
+			defer st.threadsInflight.Store(false)
+			s.refreshThreads(ctx, st)
+		}(st)
+	}
+}
+
+// refreshThreads reads st's T3 threads and re-attaches them to its last
+// snapshot without rescanning git.
+func (s *Service) refreshThreads(ctx context.Context, st *repoState) {
+	tctx, cancel := context.WithTimeout(ctx, 90*time.Second)
+	defer cancel()
+	threads, err := s.t3.Threads(tctx, st.repo.Path)
+
+	s.mu.Lock()
+	st.threadsAt = time.Now()
+	if err != nil {
+		// Not a T3 project, or T3 Code isn't running: no badges.
+		if msg := err.Error(); msg != st.threadsErr && ctx.Err() == nil {
+			st.threadsErr = msg
+			log.Printf("hrt: t3 threads for %s: %v", st.repo.Path, err)
+		}
+		threads = nil
+	} else {
+		st.threadsErr = ""
+	}
+	changed := !sameThreads(st.threads, threads)
+	st.threads = threads
+	var snap model.Snapshot
+	emitIt := false
+	if changed && st.last != nil {
+		snap = *st.last
+		snap.Branches = t3.Attach(snap.Branches, threads)
+		st.last = &snap
+		emitIt = s.active == st
+	}
+	s.mu.Unlock()
+	if emitIt {
+		emit(snap)
+	}
+}
+
+func sameThreads(a, b []t3.Thread) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
 }
 
 // rebuildAsync rebuilds st in the background unless a background build is
@@ -656,6 +743,7 @@ func (s *Service) rebuild(ctx context.Context, st *repoState, fetch, prs bool) (
 	}
 
 	s.mu.Lock()
+	snap.Branches = t3.Attach(snap.Branches, st.threads)
 	st.last = &snap
 	st.lastLocalAt = now
 	isActive := s.active == st

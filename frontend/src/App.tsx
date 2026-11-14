@@ -5,7 +5,7 @@ import { Banners, EmptyMap, ErrorState, HiddenToggle, Loading, LocalOnlyNote, No
 import { ContextMenu, type MenuItem, type MenuState } from './components/ContextMenu'
 import { Header } from './components/Header'
 import { TabBar } from './components/TabBar'
-import { CopyIcon, EyeIcon, EyeOffIcon, ExternalIcon } from './components/icons'
+import { AgentIcon, CopyIcon, EyeIcon, EyeOffIcon, ExternalIcon } from './components/icons'
 import { Tooltip, type TipState } from './components/Tooltip'
 import { useLatest, useNow, useShortcuts } from './hooks'
 import { computeLayout } from './layout'
@@ -237,6 +237,9 @@ export default function App() {
           onSelect: () => b.pr && openURL(b.pr.url),
           disabled: !b.pr,
         },
+        ...(b.thread?.link
+          ? [{ label: 'Open agent thread', icon: <AgentIcon size={14} />, onSelect: () => openURL(b.thread!.link) }]
+          : []),
         {
           label: 'Copy branch name',
           icon: <CopyIcon size={14} />,
@@ -277,6 +280,7 @@ export default function App() {
         }, TIP_DELAY_MS)
       },
       tipHide: hideTip,
+      openLink: openURL,
     }
   }, [openURL, copy, setHidden, hideTip, menuOpenRef])
 

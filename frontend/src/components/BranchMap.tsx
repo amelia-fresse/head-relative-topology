@@ -2,8 +2,8 @@ import { memo, useRef, type FocusEvent, type KeyboardEvent, type MouseEvent, typ
 import { relTime } from '../format'
 import { COMPACT, NORMAL, contentX, dotX, type Geometry } from '../geometry'
 import type { BranchRow, GapRow, HeadRow, LocalRow, MergedRow, Row } from '../layout'
-import { STATUS_LABEL, statusOf, locationOf, LOCATION_LABEL, type Anchor, type Branch, type LocalMain, type MergedPR, type Snapshot } from '../model'
-import { MoreIcon, CloudIcon, LaptopIcon } from './icons'
+import { AGENT_LABEL, AGENT_SHORT, agentStateOf, STATUS_LABEL, statusOf, locationOf, LOCATION_LABEL, type Anchor, type Branch, type LocalMain, type MergedPR, type Snapshot } from '../model'
+import { AgentIcon, MoreIcon, CloudIcon, LaptopIcon } from './icons'
 import { Rails } from './Rails'
 
 export type MapTarget =
@@ -17,6 +17,8 @@ export interface MapActions {
   menu(t: MapTarget, at: { x: number; y: number }, returnFocus: HTMLElement | null): void
   tipShow(t: MapTarget, el: HTMLElement): void
   tipHide(): void
+  /** Open a link (the agent thread badge). */
+  openLink(url: string): void
 }
 
 interface MapProps {
@@ -201,6 +203,7 @@ function branchLabel(b: Branch): string {
   if (b.unpushed > 0) parts.push(`${b.unpushed} unpushed`)
   if (b.unpulled > 0) parts.push(`${b.unpulled} not pulled`)
   if (b.worktree?.dirty) parts.push('uncommitted changes')
+  if (b.thread) parts.push(`${AGENT_LABEL[agentStateOf(b.thread)]}: ${b.thread.title}`)
   if (b.hidden) parts.push('hidden')
   return parts.join(', ')
 }
@@ -254,7 +257,7 @@ const BranchRowView = memo(function BranchRowView({
           className={`dot st-${st}`}
           style={{ left: x - g.dotSize / 2, top: g.dotY - g.dotSize / 2, width: g.dotSize, height: g.dotSize }}
         />
-        {compact ? <CompactBranch b={b} /> : <BranchCard row={row} />}
+        {compact ? <CompactBranch b={b} actions={actions} /> : <BranchCard row={row} actions={actions} />}
       </button>
       <button type="button" className="more" aria-label={`Actions for ${b.name}`} aria-haspopup="menu" title="Actions (Shift+F10)" {...h.more}>
         <MoreIcon size={14} />
@@ -293,7 +296,29 @@ function Sync({ b }: { b: Branch }) {
   )
 }
 
-function CompactBranch({ b }: { b: Branch }) {
+/**
+ * T3 Code thread working on the branch. It sits inside the row's button, so it
+ * is mouse-only (aria-hidden); keyboard users get "Open agent thread" in the
+ * row's menu and the state in the row's label.
+ */
+function AgentBadge({ b, compact, actions }: { b: Branch; compact: boolean; actions: MapActions }) {
+  const t = b.thread
+  if (!t) return null
+  const st = agentStateOf(t)
+  const open = (e: MouseEvent<HTMLElement>) => {
+    e.stopPropagation()
+    actions.tipHide()
+    if (t.link) actions.openLink(t.link)
+  }
+  return (
+    <span className={`agent agent-${st}`} aria-hidden="true" title={`${AGENT_LABEL[st]}: ${t.title} (click to open)`} onClick={open}>
+      <AgentIcon size={compact ? 12 : 12} />
+      {!compact && <span className="agent-word">{AGENT_SHORT[st]}</span>}
+    </span>
+  )
+}
+
+function CompactBranch({ b, actions }: { b: Branch; actions: MapActions }) {
   return (
     <span className="c-line">
       <LocationMark b={b} />
@@ -301,6 +326,7 @@ function CompactBranch({ b }: { b: Branch }) {
         {b.name}
       </span>
       {b.worktree?.dirty && <span className="c-dirty" aria-hidden="true" />}
+      <AgentBadge b={b} compact actions={actions} />
       {b.pr?.title && (
         <span className="c-title" title={b.pr.title}>
           {b.pr.title}
@@ -316,7 +342,7 @@ function CompactBranch({ b }: { b: Branch }) {
   )
 }
 
-function BranchCard({ row }: { row: BranchRow }) {
+function BranchCard({ row, actions }: { row: BranchRow; actions: MapActions }) {
   const b = row.branch
   const st = statusOf(b)
   return (
@@ -327,6 +353,7 @@ function BranchCard({ row }: { row: BranchRow }) {
           {b.name}
         </span>
         <Sync b={b} />
+        <AgentBadge b={b} compact={false} actions={actions} />
       </span>
       {b.pr?.title && (
         <span className="pr-title" title={b.pr.title}>

@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 import { relTime } from '../format'
-import { STATUS_LABEL, statusOf, type Branch, locationOf, LOCATION_LABEL } from '../model'
+import { AGENT_LABEL, agentStateOf, STATUS_LABEL, statusOf, type Branch, locationOf, LOCATION_LABEL } from '../model'
 import type { MapTarget } from './BranchMap'
 
 export interface TipState {
@@ -127,6 +127,13 @@ function BranchTip({ b, now, mainRef, anchorSha, anchorSubject }: { b: Branch; n
           <span className="muted">Worktree </span>
           <span className="mono break">{b.worktree.path}</span>
           {b.worktree.dirty && <span> · uncommitted changes</span>}
+        </div>
+      )}
+      {b.thread && (
+        <div className="tip-line">
+          <span className={`agent-word agent-${agentStateOf(b.thread)}`}>{AGENT_LABEL[agentStateOf(b.thread)]}</span>
+          <span className="muted"> · T3 </span>
+          {b.thread.title}
         </div>
       )}
       {last && <div className="tip-line muted">Last commit {last}</div>}

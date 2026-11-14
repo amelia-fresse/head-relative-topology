@@ -136,9 +136,30 @@ type Branch struct {
 	PR           *PullRequest `json:"pr"`
 	Worktree     *Worktree    `json:"worktree"`
 
+	// Thread is the T3 Code agent thread working on this branch, if any.
+	Thread *AgentThread `json:"thread"`
+
 	// Hidden is set by the user's hide rules; HiddenReason says which rule.
 	Hidden       bool   `json:"hidden"`
 	HiddenReason string `json:"hiddenReason"`
+}
+
+// Agent thread states shown on the map.
+const (
+	AgentRunning = "running"
+	AgentWaiting = "waiting"
+	AgentFailed  = "failed"
+	AgentIdle    = "idle"
+)
+
+// AgentThread is a T3 Code thread working on a branch.
+type AgentThread struct {
+	ID    string `json:"id"`
+	Title string `json:"title"`
+	// State: "running", "waiting" (needs you), "failed" or "idle".
+	State     string    `json:"state"`
+	Link      string    `json:"link"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 type PullRequest struct {

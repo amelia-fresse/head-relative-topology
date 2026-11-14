@@ -2,6 +2,7 @@
 // few frontend-side helpers. Only types are imported from the bindings here so
 // pure modules (layout, format) stay free of runtime side effects.
 import type {
+  AgentThread,
   Anchor,
   Branch,
   Commit,
@@ -15,7 +16,7 @@ import type {
   Worktree,
 } from '../bindings/github.com/amelia-fresse/head-relative-topology/internal/model/models'
 
-export type { Anchor, Branch, Commit, LocalMain, MergedPR, PullRequest, RepoConfig, Settings, Snapshot, Tab, Worktree }
+export type { AgentThread, Anchor, Branch, Commit, LocalMain, MergedPR, PullRequest, RepoConfig, Settings, Snapshot, Tab, Worktree }
 
 export type StatusKey = 'no_pr' | 'draft' | 'conflicts' | 'ci_failing' | 'approved' | 'review'
 
@@ -67,6 +68,27 @@ export function defaultSettings(): Settings {
 
 /** The subset of settings the layout depends on. */
 export type LayoutSettings = Pick<Settings, 'showMerged' | 'showHidden'> & Partial<Pick<Settings, 'onlyRemote'>>
+
+export type AgentState = 'running' | 'waiting' | 'failed' | 'idle'
+
+export function agentStateOf(t: Pick<AgentThread, 'state'>): AgentState {
+  return (['running', 'waiting', 'failed'] as const).find((s) => s === t.state) ?? 'idle'
+}
+
+export const AGENT_LABEL: Record<AgentState, string> = {
+  running: 'agent working',
+  waiting: 'agent needs you',
+  failed: 'agent run failed',
+  idle: 'agent idle',
+}
+
+/** Short words for the badge in normal mode. */
+export const AGENT_SHORT: Record<AgentState, string> = {
+  running: 'working',
+  waiting: 'needs you',
+  failed: 'failed',
+  idle: 'idle',
+}
 
 export type Location = 'both' | 'local' | 'remote'
 
