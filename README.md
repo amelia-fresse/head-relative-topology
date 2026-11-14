@@ -6,6 +6,8 @@ Built for AI-agent-driven development, where many branches move in parallel and 
 *where each one forked, how far behind it is, and whether it's mergeable* — not every commit in between.
 
 - One point per branch; `origin/main` collapses to its divergence and convergence points.
+- Your local `main` is a diamond on the line, with its unpushed / not-pulled counts.
+- Toggle "only remote branches" to leave local-only work out of the map.
 - Reads your local repo with `git` and pull requests with `gh` (works with private repos via your `gh auth`).
 - Hide branches you don't care about (by name, glob, or automatic rules). Rules stay private to you.
 - Themes: default, babydoll, dolly. Compact mode for narrow windows.

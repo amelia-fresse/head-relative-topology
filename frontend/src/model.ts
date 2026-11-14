@@ -5,6 +5,7 @@ import type {
   Anchor,
   Branch,
   Commit,
+  LocalMain,
   MergedPR,
   PullRequest,
   RepoConfig,
@@ -13,7 +14,7 @@ import type {
   Worktree,
 } from '../bindings/github.com/amelia-fresse/head-relative-topology/internal/model/models'
 
-export type { Anchor, Branch, Commit, MergedPR, PullRequest, RepoConfig, Settings, Snapshot, Worktree }
+export type { Anchor, Branch, Commit, LocalMain, MergedPR, PullRequest, RepoConfig, Settings, Snapshot, Worktree }
 
 export type StatusKey = 'no_pr' | 'draft' | 'conflicts' | 'ci_failing' | 'approved' | 'review'
 
@@ -53,6 +54,7 @@ export function defaultSettings(): Settings {
     compact: false,
     showMerged: true,
     showHidden: false,
+    onlyRemote: false,
     alwaysOnTop: false,
     fetchIntervalSec: 120,
     prPollIntervalSec: 60,
@@ -62,7 +64,7 @@ export function defaultSettings(): Settings {
 }
 
 /** The subset of settings the layout depends on. */
-export type LayoutSettings = Pick<Settings, 'showMerged' | 'showHidden'>
+export type LayoutSettings = Pick<Settings, 'showMerged' | 'showHidden'> & Partial<Pick<Settings, 'onlyRemote'>>
 
 export type Location = 'both' | 'local' | 'remote'
 

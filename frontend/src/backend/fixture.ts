@@ -42,6 +42,8 @@ function urlOverrides(): Partial<Settings> {
   const compact = flag('compact')
   const merged = flag('merged')
   const hidden = flag('hidden')
+  const remote = flag('remote')
+  if (remote !== undefined) out.onlyRemote = remote
   if (compact !== undefined) out.compact = compact
   if (merged !== undefined) out.showMerged = merged
   if (hidden !== undefined) out.showHidden = hidden

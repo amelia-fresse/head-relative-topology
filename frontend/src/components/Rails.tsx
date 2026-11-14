@@ -95,7 +95,7 @@ export function Rails({ g, main, lanes, connector, mainDot, splitY, dotY, depth,
   }
 
   if (mainDot) {
-    const size = mainDot === 'head' ? g.headDotSize : g.anchorDotSize
+    const size = mainDot === 'head' ? g.headDotSize : mainDot === 'local' ? g.anchorDotSize - 1 : g.anchorDotSize
     parts.push(
       <i
         key="md"

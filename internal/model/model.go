@@ -54,6 +54,24 @@ type MainLine struct {
 	Anchors []Anchor `json:"anchors"`
 	// OlderHidden is true when main has history older than the oldest anchor.
 	OlderHidden bool `json:"olderHidden"`
+	// Local is the local copy of main (refs/heads/<default>), nil when it
+	// doesn't exist or main itself is a local ref (no remote).
+	Local *LocalMain `json:"local"`
+}
+
+// LocalMain places the local default branch relative to the remote one. It
+// sits on the main line at BaseSHA (the anchor with IsLocalMain set).
+type LocalMain struct {
+	Name     string `json:"name"`
+	SHA      string `json:"sha"`
+	ShortSHA string `json:"shortSha"`
+	// BaseSHA is the merge-base with the remote main.
+	BaseSHA string `json:"baseSha"`
+	// Ahead: local commits not on the remote main (unpushed).
+	Ahead int `json:"ahead"`
+	// Behind: remote main commits not in the local main (not pulled).
+	Behind   int       `json:"behind"`
+	Worktree *Worktree `json:"worktree"`
 }
 
 type Commit struct {
@@ -71,6 +89,8 @@ type Anchor struct {
 	// Behind is the number of commits on main after this one up to HEAD (HEAD = 0).
 	Behind int  `json:"behind"`
 	IsHead bool `json:"isHead"`
+	// IsLocalMain marks where the local main sits (its merge-base with main).
+	IsLocalMain bool `json:"isLocalMain"`
 	// BranchNames lists main-based branches (Parent == "") whose merge-base is this commit.
 	BranchNames []string `json:"branchNames"`
 	// Merged lists PRs that landed on main as this commit.
@@ -111,8 +131,8 @@ type Branch struct {
 	// with main (always relative to main, even for stacked branches).
 	Behind int `json:"behind"`
 
-	LastCommitAt time.Time `json:"lastCommitAt"`
-	Status       Status    `json:"status"`
+	LastCommitAt time.Time    `json:"lastCommitAt"`
+	Status       Status       `json:"status"`
 	PR           *PullRequest `json:"pr"`
 	Worktree     *Worktree    `json:"worktree"`
 
@@ -151,11 +171,13 @@ type Worktree struct {
 // Settings are global (not per repo) user preferences.
 type Settings struct {
 	// Theme: "default", "babydoll" or "dolly".
-	Theme       string `json:"theme" toml:"theme"`
-	Compact     bool   `json:"compact" toml:"compact"`
-	ShowMerged  bool   `json:"showMerged" toml:"show_merged"`
-	ShowHidden  bool   `json:"showHidden" toml:"show_hidden"`
-	AlwaysOnTop bool   `json:"alwaysOnTop" toml:"always_on_top"`
+	Theme      string `json:"theme" toml:"theme"`
+	Compact    bool   `json:"compact" toml:"compact"`
+	ShowMerged bool   `json:"showMerged" toml:"show_merged"`
+	ShowHidden bool   `json:"showHidden" toml:"show_hidden"`
+	// OnlyRemote hides branches that exist only on this machine.
+	OnlyRemote  bool `json:"onlyRemote" toml:"only_remote"`
+	AlwaysOnTop bool `json:"alwaysOnTop" toml:"always_on_top"`
 	// FetchIntervalSec: how often to run `git fetch` (0 = never automatically).
 	FetchIntervalSec int `json:"fetchIntervalSec" toml:"fetch_interval_sec"`
 	// PRPollIntervalSec: how often to query GitHub.

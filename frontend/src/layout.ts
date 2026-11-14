@@ -11,7 +11,7 @@
 //               a lane, or (merged PRs) a dashed elbow joining main from below.
 //   main      – per row, the style of the main line above and below the row's
 //               split point (the anchor dot, or the row middle).
-import type { Anchor, Branch, LayoutSettings, MergedPR, Snapshot } from './model'
+import type { Anchor, Branch, LayoutSettings, LocalMain, MergedPR, Snapshot } from './model'
 
 /** 'junction' is the shared lane right of main; a number is the depth of the branch dot the lane hangs from. */
 export type LaneCol = 'junction' | number
@@ -35,7 +35,7 @@ export interface MainSegs {
   bottom: MainSeg | null
 }
 
-export type MainDot = 'head' | 'divergence' | 'convergence'
+export type MainDot = 'head' | 'divergence' | 'convergence' | 'local'
 
 export type Connector =
   | { kind: 'none' }
@@ -53,6 +53,15 @@ interface RowBase {
 
 export interface HeadRow extends RowBase {
   kind: 'head'
+  anchor: Anchor
+  /** The local main when it sits on HEAD (up to date, or only ahead). */
+  local: LocalMain | null
+}
+
+/** The local main where it sits on the line (its merge-base with main), when that isn't HEAD. */
+export interface LocalRow extends RowBase {
+  kind: 'local'
+  local: LocalMain
   anchor: Anchor
 }
 
@@ -86,7 +95,7 @@ export interface TailRow extends RowBase {
   kind: 'tail'
 }
 
-export type Row = HeadRow | BranchRow | MergedRow | GapRow | TailRow
+export type Row = HeadRow | LocalRow | BranchRow | MergedRow | GapRow | TailRow
 
 export interface Layout {
   rows: Row[]
@@ -94,6 +103,8 @@ export interface Layout {
   hiddenCount: number
   /** Branches drawn on the map. */
   shownCount: number
+  /** Local-only branches left out because settings.onlyRemote is on. */
+  localOnlyCount: number
 }
 
 // ---------------------------------------------------------------------------
@@ -103,6 +114,7 @@ function headAnchorFallback(s: Snapshot): Anchor {
     commit: s.main.head,
     behind: 0,
     isHead: true,
+    isLocalMain: false,
     branchNames: [],
     merged: [],
   } as Anchor
@@ -148,7 +160,9 @@ function anchorIndexFor(b: Branch, anchors: Anchor[]): number {
 export function computeLayout(snapshot: Snapshot, settings: LayoutSettings): Layout {
   const anchors = normaliseAnchors(snapshot)
   const branches = snapshot.branches ?? []
-  const visible = branches.filter((b) => !b.hidden || settings.showHidden)
+  const local = snapshot.main?.local ?? null
+  const onlyRemote = !!settings.onlyRemote
+  const visible = branches.filter((b) => (!b.hidden || settings.showHidden) && (!onlyRemote || b.remote))
   const byName = new Map(visible.map((b) => [b.name, b]))
   const allByName = new Map(branches.map((b) => [b.name, b]))
 
@@ -190,10 +204,11 @@ export function computeLayout(snapshot: Snapshot, settings: LayoutSettings): Lay
   }
 
   const keep = (a: Anchor, i: number) =>
-    a.isHead || (roots.get(i)?.length ?? 0) > 0 || (settings.showMerged && (a.merged ?? []).length > 0)
+    a.isHead ||
+    (local !== null && a.isLocalMain) || (roots.get(i)?.length ?? 0) > 0 || (settings.showMerged && (a.merged ?? []).length > 0)
 
   // --- Pass 1: emit rows with connectors; remember lane spans. -------------
-  type Draft = Omit<HeadRow, 'main' | 'lanes'> | Omit<BranchRow, 'main' | 'lanes'> | Omit<MergedRow, 'main' | 'lanes'> | Omit<GapRow, 'main' | 'lanes'> | Omit<TailRow, 'main' | 'lanes'>
+  type Draft = Omit<HeadRow, 'main' | 'lanes'> | Omit<LocalRow, 'main' | 'lanes'> | Omit<BranchRow, 'main' | 'lanes'> | Omit<MergedRow, 'main' | 'lanes'> | Omit<GapRow, 'main' | 'lanes'> | Omit<TailRow, 'main' | 'lanes'>
   const drafts: Draft[] = []
   const spans: { col: LaneCol; start: number; end: number }[] = []
   const dotRows: number[] = []
@@ -236,14 +251,18 @@ export function computeLayout(snapshot: Snapshot, settings: LayoutSettings): Lay
     const groupStart = drafts.length
     lastGroupStart = groupStart
     dotRows.push(groupStart)
+    const localHere = local !== null && anchor.isLocalMain ? local : null
     const dot: MainDot = anchor.isHead
       ? 'head'
-      : settings.showMerged && (anchor.merged ?? []).length > 0
+      : localHere
+        ? 'local'
+        : settings.showMerged && (anchor.merged ?? []).length > 0
         ? 'convergence'
         : 'divergence'
     let junctionEnd = -1
 
-    if (anchor.isHead) drafts.push({ kind: 'head', key: 'head', anchor, mainDot: dot })
+    if (anchor.isHead) drafts.push({ kind: 'head', key: 'head', anchor, local: localHere, mainDot: dot })
+    else if (localHere) drafts.push({ kind: 'local', key: 'local', local: localHere, anchor, mainDot: dot })
 
     const groupRoots = roots.get(i) ?? []
     groupRoots.forEach((b) => {
@@ -310,5 +329,10 @@ export function computeLayout(snapshot: Snapshot, settings: LayoutSettings): Lay
     return { ...d, main, lanes: lanes[r] } as Row
   })
 
-  return { rows, hiddenCount: branches.filter((b) => b.hidden).length, shownCount }
+  return {
+    rows,
+    hiddenCount: branches.filter((b) => b.hidden && (!onlyRemote || b.remote)).length,
+    shownCount,
+    localOnlyCount: onlyRemote ? branches.filter((b) => !b.remote && (!b.hidden || settings.showHidden)).length : 0,
+  }
 }

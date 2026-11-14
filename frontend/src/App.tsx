@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { connect, createWailsBackend, errorMessage, hasRepo, type Backend } from './backend'
 import { BranchMap, type MapActions, type MapTarget } from './components/BranchMap'
-import { Banners, EmptyMap, ErrorState, HiddenToggle, Loading, NoRepo, type Notice } from './components/Chrome'
+import { Banners, EmptyMap, ErrorState, HiddenToggle, Loading, LocalOnlyNote, NoRepo, type Notice } from './components/Chrome'
 import { ContextMenu, type MenuItem, type MenuState } from './components/ContextMenu'
 import { Header } from './components/Header'
 import { CopyIcon, EyeIcon, EyeOffIcon, ExternalIcon } from './components/icons'
@@ -200,8 +200,8 @@ export default function App() {
   // --- derived ---------------------------------------------------------------
   const ready = phase.kind === 'ready' && hasRepo(snapshot)
   const layout = useMemo(
-    () => (snapshot && ready ? computeLayout(snapshot, { showMerged: settings.showMerged, showHidden: settings.showHidden }) : null),
-    [snapshot, ready, settings.showMerged, settings.showHidden],
+    () => (snapshot && ready ? computeLayout(snapshot, { showMerged: settings.showMerged, showHidden: settings.showHidden, onlyRemote: settings.onlyRemote }) : null),
+    [snapshot, ready, settings.showMerged, settings.showHidden, settings.onlyRemote],
   )
 
   useShortcuts(
@@ -212,6 +212,7 @@ export default function App() {
       m: () => updateSettings({ showMerged: !settingsRef.current.showMerged }),
       t: () => updateSettings({ theme: nextTheme(settingsRef.current.theme) }),
       h: () => updateSettings({ showHidden: !settingsRef.current.showHidden }),
+      l: () => updateSettings({ onlyRemote: !settingsRef.current.onlyRemote }),
       escape: hideTip,
     },
     menu === null,
@@ -236,6 +237,7 @@ export default function App() {
         onRefresh={refresh}
         onToggleCompact={() => updateSettings({ compact: !settings.compact })}
         onToggleMerged={() => updateSettings({ showMerged: !settings.showMerged })}
+        onToggleOnlyRemote={() => updateSettings({ onlyRemote: !settings.onlyRemote })}
         onCycleTheme={() => updateSettings({ theme: nextTheme(settings.theme) })}
         onOpenRepo={pickRepo}
       />
@@ -247,7 +249,8 @@ export default function App() {
         {layout && snapshot && (
           <>
             <BranchMap rows={layout.rows} snapshot={snapshot} compact={settings.compact} now={now} actions={actions} />
-            {layout.shownCount === 0 && <EmptyMap hiddenCount={layout.hiddenCount} />}
+            {layout.shownCount === 0 && <EmptyMap hiddenCount={layout.hiddenCount} localOnlyCount={layout.localOnlyCount} />}
+            <LocalOnlyNote count={layout.localOnlyCount} onShow={() => updateSettings({ onlyRemote: false })} />
             <HiddenToggle
               count={layout.hiddenCount}
               shown={settings.showHidden}

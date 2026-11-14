@@ -46,6 +46,8 @@ type Scan struct {
 	MainHead CommitInfo
 	// Local are refs/heads/* branches, except the default branch.
 	Local []Ref
+	// LocalMain is refs/heads/<default> when main is read from a remote.
+	LocalMain *Ref
 	// Remote are refs/remotes/<remote>/* branches, except <remote>/HEAD and
 	// the default branch.
 	Remote    []Ref
@@ -85,6 +87,10 @@ func (r *Repo) Scan(ctx context.Context) (*Scan, error) {
 		case strings.HasPrefix(f[0], "refs/heads/"):
 			ref.Name = strings.TrimPrefix(f[0], "refs/heads/")
 			if ref.Name == r.DefaultBranch {
+				if remotePrefix != "" {
+					lm := ref
+					s.LocalMain = &lm
+				}
 				continue
 			}
 			s.Local = append(s.Local, ref)

@@ -484,6 +484,49 @@ func TestBuildEmpty(t *testing.T) {
 	if len(snap.Main.Anchors) != 1 || !snap.Main.Anchors[0].IsHead || snap.Main.Anchors[0].Commit.SHA != c0 || snap.Main.OlderHidden {
 		t.Errorf("anchors=%+v olderHidden=%v", snap.Main.Anchors, snap.Main.OlderHidden)
 	}
+	if lm := snap.Main.Local; lm == nil || lm.Ahead != 0 || lm.Behind != 0 || lm.BaseSHA != c0 || !snap.Main.Anchors[0].IsLocalMain {
+		t.Errorf("local main = %+v, head anchor = %+v", lm, snap.Main.Anchors[0])
+	}
+}
+
+// TestLocalMain: local main diverged from origin/main (1 unpushed, 2 not
+// pulled) sits on the line at the merge-base.
+func TestLocalMain(t *testing.T) {
+	env := gittest.New(t)
+	origin := env.InitBare("origin.git")
+	w := env.Init("work")
+	c0 := env.Commit(w, "c0")
+	env.Commit(w, "c1")
+	env.Commit(w, "c2")
+	env.Git(w, "remote", "add", "origin", origin)
+	env.Git(w, "push", "-q", "origin", "main")
+	env.Git(w, "reset", "-q", "--hard", c0)
+	l1 := env.Commit(w, "l1")
+
+	ctx := context.Background()
+	r, err := gitscan.Open(ctx, w)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s, err := r.Scan(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	snap, err := snapshot.Build(ctx, snapshot.Input{Repo: r, Scan: s})
+	if err != nil {
+		t.Fatal(err)
+	}
+	lm := snap.Main.Local
+	if lm == nil || lm.SHA != l1 || lm.BaseSHA != c0 || lm.Ahead != 1 || lm.Behind != 2 || lm.Worktree == nil || !lm.Worktree.IsMain {
+		t.Fatalf("local main = %+v", lm)
+	}
+	if len(snap.Main.Anchors) != 2 {
+		t.Fatalf("anchors = %+v", snap.Main.Anchors)
+	}
+	a := snap.Main.Anchors[1]
+	if a.Commit.SHA != c0 || a.Behind != 2 || !a.IsLocalMain || snap.Main.Anchors[0].IsLocalMain {
+		t.Errorf("local anchor = %+v", a)
+	}
 }
 
 func TestStatusPriority(t *testing.T) {

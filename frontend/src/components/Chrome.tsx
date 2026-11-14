@@ -1,6 +1,6 @@
 // Small pieces around the map: banners, footer toggle, full-page states.
 import { plural } from '../format'
-import { AlertIcon, CloseIcon, EyeIcon, EyeOffIcon, FolderIcon, InfoIcon } from './icons'
+import { AlertIcon, CloseIcon, CloudIcon, EyeIcon, EyeOffIcon, FolderIcon, InfoIcon } from './icons'
 
 export interface Notice {
   id: string
@@ -22,6 +22,22 @@ export function Banners({ notices, onDismiss }: { notices: Notice[]; onDismiss(i
         </div>
       ))}
     </div>
+  )
+}
+
+/** Shown while "only remote branches" leaves local-only branches out. */
+export function LocalOnlyNote({ count, onShow }: { count: number; onShow(): void }) {
+  if (count === 0) return null
+  return (
+    <footer className="footer">
+      <button type="button" className="text-btn" onClick={onShow} title="Show local-only branches again (l)">
+        <CloudIcon size={14} />
+        <span>
+          Only remote branches
+          <span className="muted"> · {plural(count, 'local-only branch', 'local-only branches')} not shown</span>
+        </span>
+      </button>
+    </footer>
   )
 }
 
@@ -89,10 +105,12 @@ export function NoRepo({ onPick, busy }: { onPick(): void; busy: boolean }) {
   )
 }
 
-export function EmptyMap({ hiddenCount }: { hiddenCount: number }) {
+export function EmptyMap({ hiddenCount, localOnlyCount = 0 }: { hiddenCount: number; localOnlyCount?: number }) {
   return (
     <div className="empty">
-      {hiddenCount > 0 ? (
+      {localOnlyCount > 0 ? (
+        <p>No branches on the remote. {plural(localOnlyCount, 'local-only branch is', 'local-only branches are')} not shown (press l).</p>
+      ) : hiddenCount > 0 ? (
         <p>
           Every branch is hidden right now. Use the toggle below to show {hiddenCount === 1 ? 'it' : `all ${hiddenCount}`}.
         </p>

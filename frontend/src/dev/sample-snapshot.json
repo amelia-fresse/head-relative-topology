@@ -7,9 +7,10 @@
     "ref": "origin/main",
     "head": { "sha": "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678", "shortSha": "a1b2c3d", "subject": "Merge pull request #422 from acme/fix/typo", "time": "2026-11-13T16:40:00Z" },
     "olderHidden": true,
+    "local": { "name": "main", "sha": "9c8b7a6d5e4f30211234567890abcdef12345678", "shortSha": "9c8b7a6", "baseSha": "f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4", "ahead": 1, "behind": 2, "worktree": { "path": "/home/dev/my-app", "dirty": false, "isMain": true } },
     "anchors": [
       { "commit": { "sha": "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678", "shortSha": "a1b2c3d", "subject": "Merge pull request #422 from acme/fix/typo", "time": "2026-11-13T16:40:00Z" }, "behind": 0, "isHead": true, "branchNames": [], "merged": [] },
-      { "commit": { "sha": "f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4", "shortSha": "f4f4f4f", "subject": "Bump test timeout", "time": "2026-11-13T15:10:00Z" }, "behind": 2, "isHead": false, "branchNames": ["agent/fix-flaky-tests"], "merged": [] },
+      { "commit": { "sha": "f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4f4", "shortSha": "f4f4f4f", "subject": "Bump test timeout", "time": "2026-11-13T15:10:00Z" }, "behind": 2, "isHead": false, "isLocalMain": true, "branchNames": ["agent/fix-flaky-tests"], "merged": [] },
       { "commit": { "sha": "e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2", "shortSha": "e2e2e2e", "subject": "Add export presets (#421)", "time": "2026-11-13T16:00:00Z" }, "behind": 5, "isHead": false, "branchNames": [],
         "merged": [ { "number": 421, "title": "Add export presets", "url": "https://github.com/acme/my-app/pull/421", "headRef": "feat/export-presets", "author": "agent-2", "mergedAt": "2026-11-13T16:00:00Z", "mergeCommitSha": "e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2" } ] },
       { "commit": { "sha": "f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3", "shortSha": "f3f3f3f", "subject": "Refactor session store", "time": "2026-11-13T11:20:00Z" }, "behind": 9, "isHead": false, "branchNames": ["feat/auth-sso"], "merged": [] },

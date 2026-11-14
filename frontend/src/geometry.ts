@@ -32,6 +32,8 @@ export interface Geometry {
   mergedDotSize: number
   mergedRowH: number
   gapRowH: number
+  /** Row carrying the local main marker (no card). */
+  localRowH: number
   tailRowH: number
   /** Gap between a dot's edge and its card / label. */
   contentGap: number
@@ -59,6 +61,7 @@ export const NORMAL: Geometry = {
   mergedDotSize: 10,
   mergedRowH: 40,
   gapRowH: 26,
+  localRowH: 30,
   tailRowH: 30,
   contentGap: 8,
   headContentX: 42,
@@ -84,6 +87,7 @@ export const COMPACT: Geometry = {
   mergedDotSize: 8,
   mergedRowH: 30,
   gapRowH: 20,
+  localRowH: 24,
   tailRowH: 22,
   contentGap: 8,
   headContentX: 36,

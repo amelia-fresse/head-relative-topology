@@ -218,8 +218,13 @@ func Build(ctx context.Context, in Input) (model.Snapshot, error) {
 		return branches[i].Name < branches[j].Name
 	})
 
-	// 9. Anchors.
-	anchors, olderHidden, err := buildAnchors(ctx, repo, scan, byName, names, in.MergedPRs)
+	// 9. Local main and anchors.
+	localMain := buildLocalMain(ctx, repo, scan, wtByBranch, warn)
+	localBase := ""
+	if localMain != nil {
+		localBase = localMain.BaseSHA
+	}
+	anchors, olderHidden, err := buildAnchors(ctx, repo, scan, byName, names, in.MergedPRs, localBase)
 	if err != nil {
 		return model.Snapshot{}, err
 	}
@@ -236,6 +241,7 @@ func Build(ctx context.Context, in Input) (model.Snapshot, error) {
 			Head:        scan.MainHead.Model(),
 			Anchors:     anchors,
 			OlderHidden: olderHidden,
+			Local:       localMain,
 		},
 		Branches:    branches,
 		GeneratedAt: time.Now().UTC(),
@@ -424,7 +430,7 @@ func breakCycles(byName map[string]*cand, names []string) {
 
 // buildAnchors collapses main into HEAD, divergence and convergence anchors,
 // newest first.
-func buildAnchors(ctx context.Context, repo *gitscan.Repo, scan *gitscan.Scan, byName map[string]*cand, names []string, merged []model.MergedPR) ([]model.Anchor, bool, error) {
+func buildAnchors(ctx context.Context, repo *gitscan.Repo, scan *gitscan.Scan, byName map[string]*cand, names []string, merged []model.MergedPR, localBase string) ([]model.Anchor, bool, error) {
 	mainHead := scan.MainHead.SHA
 	type acc struct {
 		a      model.Anchor
@@ -452,6 +458,10 @@ func buildAnchors(ctx context.Context, repo *gitscan.Repo, scan *gitscan.Scan, b
 		x := at(c.mainBase)
 		x.a.BranchNames = append(x.a.BranchNames, n)
 		x.behind, x.known = c.b.Behind, true
+	}
+
+	if localBase != "" {
+		at(localBase).a.IsLocalMain = true
 	}
 
 	// Convergence: only merge commits that actually landed on main.
@@ -536,6 +546,38 @@ func buildAnchors(ctx context.Context, repo *gitscan.Repo, scan *gitscan.Scan, b
 	oldest := anchors[len(anchors)-1]
 	olderHidden := len(infoBySHA[oldest.Commit.SHA].Parents) > 0
 	return anchors, olderHidden, nil
+}
+
+// buildLocalMain compares the local default branch with the remote one.
+// Failures become warnings: the marker is a nicety, not part of the map.
+func buildLocalMain(ctx context.Context, repo *gitscan.Repo, scan *gitscan.Scan, wtByBranch map[string]gitscan.Worktree, warn func(string, ...any)) *model.LocalMain {
+	lm := scan.LocalMain
+	if lm == nil {
+		return nil
+	}
+	mainHead := scan.MainHead.SHA
+	base, err := repo.MergeBase(ctx, lm.SHA, mainHead)
+	if err != nil {
+		warn("local %s: %v", lm.Name, err)
+		return nil
+	}
+	if base == "" {
+		return nil // unrelated history
+	}
+	ahead, behind, err := repo.LeftRight(ctx, lm.SHA, mainHead)
+	if err != nil {
+		warn("local %s: %v", lm.Name, err)
+		return nil
+	}
+	short := lm.SHA
+	if len(short) > 7 {
+		short = short[:7]
+	}
+	out := &model.LocalMain{Name: lm.Name, SHA: lm.SHA, ShortSHA: short, BaseSHA: base, Ahead: ahead, Behind: behind}
+	if wt, ok := wtByBranch[lm.Name]; ok {
+		out.Worktree = &model.Worktree{Path: wt.Path, Dirty: wt.Dirty, IsMain: wt.IsMain}
+	}
+	return out
 }
 
 func sortedNames(m map[string]*cand) []string {

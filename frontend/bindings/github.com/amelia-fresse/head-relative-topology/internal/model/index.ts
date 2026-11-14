@@ -5,6 +5,7 @@ export {
     Anchor,
     Branch,
     Commit,
+    LocalMain,
     MainLine,
     MergedPR,
     PullRequest,

@@ -20,6 +20,11 @@ export class Anchor {
     "isHead": boolean;
 
     /**
+     * IsLocalMain marks where the local main sits (its merge-base with main).
+     */
+    "isLocalMain": boolean;
+
+    /**
      * BranchNames lists main-based branches (Parent == "") whose merge-base is this commit.
      */
     "branchNames": string[];
@@ -40,6 +45,9 @@ export class Anchor {
         if (!("isHead" in $$source)) {
             this["isHead"] = false;
         }
+        if (!("isLocalMain" in $$source)) {
+            this["isLocalMain"] = false;
+        }
         if (!("branchNames" in $$source)) {
             this["branchNames"] = [];
         }
@@ -55,17 +63,17 @@ export class Anchor {
      */
     static createFrom($$source: any = {}): Anchor {
         const $$createField0_0 = $$createType0;
-        const $$createField3_0 = $$createType1;
-        const $$createField4_0 = $$createType3;
+        const $$createField4_0 = $$createType1;
+        const $$createField5_0 = $$createType3;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("commit" in $$parsedSource) {
             $$parsedSource["commit"] = $$createField0_0($$parsedSource["commit"]);
         }
         if ("branchNames" in $$parsedSource) {
-            $$parsedSource["branchNames"] = $$createField3_0($$parsedSource["branchNames"]);
+            $$parsedSource["branchNames"] = $$createField4_0($$parsedSource["branchNames"]);
         }
         if ("merged" in $$parsedSource) {
-            $$parsedSource["merged"] = $$createField4_0($$parsedSource["merged"]);
+            $$parsedSource["merged"] = $$createField5_0($$parsedSource["merged"]);
         }
         return new Anchor($$parsedSource as Partial<Anchor>);
     }
@@ -229,6 +237,71 @@ export class Commit {
     }
 }
 
+/**
+ * LocalMain places the local default branch relative to the remote one. It
+ * sits on the main line at BaseSHA (the anchor with IsLocalMain set).
+ */
+export class LocalMain {
+    "name": string;
+    "sha": string;
+    "shortSha": string;
+
+    /**
+     * BaseSHA is the merge-base with the remote main.
+     */
+    "baseSha": string;
+
+    /**
+     * Ahead: local commits not on the remote main (unpushed).
+     */
+    "ahead": number;
+
+    /**
+     * Behind: remote main commits not in the local main (not pulled).
+     */
+    "behind": number;
+    "worktree": Worktree | null;
+
+    /** Creates a new LocalMain instance. */
+    constructor($$source: Partial<LocalMain> = {}) {
+        if (!("name" in $$source)) {
+            this["name"] = "";
+        }
+        if (!("sha" in $$source)) {
+            this["sha"] = "";
+        }
+        if (!("shortSha" in $$source)) {
+            this["shortSha"] = "";
+        }
+        if (!("baseSha" in $$source)) {
+            this["baseSha"] = "";
+        }
+        if (!("ahead" in $$source)) {
+            this["ahead"] = 0;
+        }
+        if (!("behind" in $$source)) {
+            this["behind"] = 0;
+        }
+        if (!("worktree" in $$source)) {
+            this["worktree"] = null;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new LocalMain instance from a string or object.
+     */
+    static createFrom($$source: any = {}): LocalMain {
+        const $$createField6_0 = $$createType7;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("worktree" in $$parsedSource) {
+            $$parsedSource["worktree"] = $$createField6_0($$parsedSource["worktree"]);
+        }
+        return new LocalMain($$parsedSource as Partial<LocalMain>);
+    }
+}
+
 export class MainLine {
     /**
      * Ref is the full display ref, e.g. "origin/main".
@@ -241,6 +314,12 @@ export class MainLine {
      * OlderHidden is true when main has history older than the oldest anchor.
      */
     "olderHidden": boolean;
+
+    /**
+     * Local is the local copy of main (refs/heads/<default>), nil when it
+     * doesn't exist or main itself is a local ref (no remote).
+     */
+    "local": LocalMain | null;
 
     /** Creates a new MainLine instance. */
     constructor($$source: Partial<MainLine> = {}) {
@@ -256,6 +335,9 @@ export class MainLine {
         if (!("olderHidden" in $$source)) {
             this["olderHidden"] = false;
         }
+        if (!("local" in $$source)) {
+            this["local"] = null;
+        }
 
         Object.assign(this, $$source);
     }
@@ -266,12 +348,16 @@ export class MainLine {
     static createFrom($$source: any = {}): MainLine {
         const $$createField1_0 = $$createType0;
         const $$createField2_0 = $$createType9;
+        const $$createField4_0 = $$createType11;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("head" in $$parsedSource) {
             $$parsedSource["head"] = $$createField1_0($$parsedSource["head"]);
         }
         if ("anchors" in $$parsedSource) {
             $$parsedSource["anchors"] = $$createField2_0($$parsedSource["anchors"]);
+        }
+        if ("local" in $$parsedSource) {
+            $$parsedSource["local"] = $$createField4_0($$parsedSource["local"]);
         }
         return new MainLine($$parsedSource as Partial<MainLine>);
     }
@@ -542,6 +628,11 @@ export class Settings {
     "compact": boolean;
     "showMerged": boolean;
     "showHidden": boolean;
+
+    /**
+     * OnlyRemote hides branches that exist only on this machine.
+     */
+    "onlyRemote": boolean;
     "alwaysOnTop": boolean;
 
     /**
@@ -577,6 +668,9 @@ export class Settings {
         }
         if (!("showHidden" in $$source)) {
             this["showHidden"] = false;
+        }
+        if (!("onlyRemote" in $$source)) {
+            this["onlyRemote"] = false;
         }
         if (!("alwaysOnTop" in $$source)) {
             this["alwaysOnTop"] = false;
@@ -660,9 +754,9 @@ export class Snapshot {
      * Creates a new Snapshot instance from a string or object.
      */
     static createFrom($$source: any = {}): Snapshot {
-        const $$createField0_0 = $$createType10;
-        const $$createField1_0 = $$createType11;
-        const $$createField2_0 = $$createType13;
+        const $$createField0_0 = $$createType12;
+        const $$createField1_0 = $$createType13;
+        const $$createField2_0 = $$createType15;
         const $$createField5_0 = $$createType1;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("repo" in $$parsedSource) {
@@ -742,7 +836,9 @@ const $$createType6 = Worktree.createFrom;
 const $$createType7 = $Create.Nullable($$createType6);
 const $$createType8 = Anchor.createFrom;
 const $$createType9 = $Create.Array($$createType8);
-const $$createType10 = RepoInfo.createFrom;
-const $$createType11 = MainLine.createFrom;
-const $$createType12 = Branch.createFrom;
-const $$createType13 = $Create.Array($$createType12);
+const $$createType10 = LocalMain.createFrom;
+const $$createType11 = $Create.Nullable($$createType10);
+const $$createType12 = RepoInfo.createFrom;
+const $$createType13 = MainLine.createFrom;
+const $$createType14 = Branch.createFrom;
+const $$createType15 = $Create.Array($$createType14);

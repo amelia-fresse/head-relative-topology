@@ -43,10 +43,10 @@ function merged(n: number): MergedPR {
   return { number: n, title: `PR ${n}`, url: `https://x/${n}`, headRef: `h${n}`, author: 'a', mergedAt: '2026-11-13T10:00:00Z', mergeCommitSha: '' } as MergedPR
 }
 
-function snapshot(anchors: Anchor[], branches: Branch[], olderHidden = false): Snapshot {
+function snapshot(anchors: Anchor[], branches: Branch[], olderHidden = false, local: unknown = null): Snapshot {
   return {
     repo: { path: '/r', slug: 'o/r', remote: 'origin', defaultBranch: 'main' },
-    main: { ref: 'origin/main', head: commit('head'), anchors, olderHidden },
+    main: { ref: 'origin/main', head: commit('head'), anchors, olderHidden, local },
     branches,
     generatedAt: '2026-11-13T10:00:00Z',
     fetchedAt: '2026-11-13T10:00:00Z',
@@ -59,7 +59,9 @@ function shape(rows: Row[]): string[] {
   return rows.map((r) => {
     switch (r.kind) {
       case 'head':
-        return 'HEAD'
+        return r.local ? 'HEAD+local' : 'HEAD'
+      case 'local':
+        return 'LOCAL'
       case 'gap':
         return `gap ${r.count}`
       case 'tail':
@@ -83,6 +85,7 @@ describe('computeLayout with the sample snapshot', () => {
     expect(shape(rows)).toEqual([
       'HEAD',
       'gap 1',
+      'LOCAL',
       'agent/fix-flaky-tests',
       'gap 2',
       'merged #421',
@@ -106,6 +109,7 @@ describe('computeLayout with the sample snapshot', () => {
     expect(shape(rows)).toEqual([
       'HEAD',
       'gap 1',
+      'LOCAL',
       'agent/fix-flaky-tests',
       'gap 6', // 9 - 2 - 1
       'feat/auth-sso',
@@ -307,5 +311,59 @@ describe('scale and edge cases', () => {
     expect(rows.filter((r) => r.kind === 'branch')).toHaveLength(150)
     expect(rows.filter((r) => r.kind === 'gap')).toHaveLength(50)
     expect(new Set(rows.map((r) => r.key)).size).toBe(rows.length)
+  })
+})
+
+describe('local main', () => {
+  const lm = (behind: number, ahead = 0) => ({ name: 'main', sha: 'l', shortSha: 'l', baseSha: '', ahead, behind, worktree: null })
+
+  it('draws a local row carrying the anchor dot, siblings hang from the junction', () => {
+    const { rows } = computeLayout(snap, ALL)
+    const i = rows.findIndex((r) => r.kind === 'local')
+    expect(rows[i].mainDot).toBe('local')
+    const next = rows[i + 1] as BranchRow
+    expect(next.branch.name).toBe('agent/fix-flaky-tests')
+    expect(next.mainDot).toBeNull()
+    expect(next.connector).toEqual({ kind: 'elbow', from: 'junction' })
+    expect(rows[i].lanes).toEqual([{ col: 'junction', seg: 'start' }])
+  })
+
+  it('keeps an anchor that only holds the local main', () => {
+    const s = snapshot([anchor('h', 0), anchor('m', 4, { isLocalMain: true })], [], false, lm(4))
+    expect(shape(computeLayout(s, ALL).rows)).toEqual(['HEAD', 'gap 3', 'LOCAL'])
+  })
+
+  it('rides on the HEAD row when up to date', () => {
+    const s = snapshot([anchor('h', 0, { isLocalMain: true })], [], false, lm(0, 2))
+    const { rows } = computeLayout(s, ALL)
+    expect(shape(rows)).toEqual(['HEAD+local'])
+    expect(rows[0].mainDot).toBe('head')
+  })
+
+  it('ignores the flag when the snapshot has no local main', () => {
+    const s = snapshot([anchor('h', 0), anchor('m', 4, { isLocalMain: true })], [])
+    expect(shape(computeLayout(s, ALL).rows)).toEqual(['HEAD'])
+  })
+})
+
+describe('only remote branches', () => {
+  it('leaves local-only branches out and counts them', () => {
+    const l = computeLayout(snap, { ...ALL, onlyRemote: true })
+    const names = l.rows.filter((r): r is BranchRow => r.kind === 'branch').map((r) => r.branch.name)
+    expect(names).not.toContain('chore/deps-bump')
+    expect(names).toContain('feat/ifc-export')
+    expect(names.every((n) => snap.branches.find((b) => b.name === n)!.remote)).toBe(true)
+    // chore/deps-bump is local only and visible; archive/old-spike is local only but hidden.
+    expect(l.localOnlyCount).toBe(1)
+    expect(l.hiddenCount).toBe(1)
+  })
+
+  it('re-attaches a stacked branch to main when its parent is local only', () => {
+    const s = snapshot(
+      [anchor('h', 0), anchor('a', 3, { branchNames: ['p'] })],
+      [branch('p', 3, { remote: false }), branch('c', 3, { parent: 'p' })],
+    )
+    const { rows } = computeLayout(s, { ...ALL, onlyRemote: true })
+    expect(shape(rows)).toEqual(['HEAD', 'gap 2', 'c'])
   })
 })

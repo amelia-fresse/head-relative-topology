@@ -1,8 +1,8 @@
 import { memo, useRef, type FocusEvent, type KeyboardEvent, type MouseEvent, type ReactNode } from 'react'
 import { relTime } from '../format'
 import { COMPACT, NORMAL, contentX, dotX, type Geometry } from '../geometry'
-import type { BranchRow, GapRow, HeadRow, MergedRow, Row } from '../layout'
-import { STATUS_LABEL, statusOf, locationOf, LOCATION_LABEL, type Anchor, type Branch, type MergedPR, type Snapshot } from '../model'
+import type { BranchRow, GapRow, HeadRow, LocalRow, MergedRow, Row } from '../layout'
+import { STATUS_LABEL, statusOf, locationOf, LOCATION_LABEL, type Anchor, type Branch, type LocalMain, type MergedPR, type Snapshot } from '../model'
 import { MoreIcon, CloudIcon, LaptopIcon } from './icons'
 import { Rails } from './Rails'
 
@@ -35,6 +35,8 @@ export function BranchMap({ rows, snapshot, compact, now, actions }: MapProps) {
         switch (row.kind) {
           case 'head':
             return <HeadRowView key={row.key} row={row} g={g} compact={compact} snapshot={snapshot} now={now} />
+          case 'local':
+            return <LocalRowView key={row.key} row={row} g={g} mainRef={snapshot.main.ref || 'main'} />
           case 'branch':
             return <BranchRowView key={row.key} row={row} g={g} compact={compact} actions={actions} />
           case 'merged':
@@ -66,16 +68,71 @@ function HeadRowView({ row, g, compact, snapshot, now }: { row: HeadRow; g: Geom
       {compact ? (
         <div className="head-line" style={{ marginLeft: g.headContentX }} title={commit.subject}>
           <span className="head-chip">{snapshot.main.ref || 'main'}</span>
+          {row.local && <LocalTag local={row.local} mainRef={snapshot.main.ref || 'main'} />}
           <span className="c-meta">{fetched ? `${sha} · ${fetched}` : sha}</span>
         </div>
       ) : (
         <div className="card head-card" style={{ marginLeft: g.headContentX }} title={commit.subject}>
           <span className="title">
             <span className="name">{snapshot.main.ref || 'main'}</span>
+            {row.local && <LocalTag local={row.local} mainRef={snapshot.main.ref || 'main'} />}
           </span>
           <span className="meta">{metaText}</span>
         </div>
       )}
+    </li>
+  )
+}
+
+// ---------------------------------------------------------------------------
+
+function localTitle(l: LocalMain, mainRef: string): string {
+  const parts: string[] = []
+  if (l.behind > 0) parts.push(`${l.behind} commit${l.behind === 1 ? '' : 's'} behind ${mainRef}`)
+  if (l.ahead > 0) parts.push(`${l.ahead} commit${l.ahead === 1 ? '' : 's'} not pushed`)
+  if (parts.length === 0) parts.push(`up to date with ${mainRef}`)
+  if (l.worktree?.dirty) parts.push('uncommitted changes')
+  return `Local ${l.name || 'main'} (${l.shortSha}): ${parts.join(', ')}`
+}
+
+function LocalSync({ l }: { l: LocalMain }) {
+  if (l.ahead <= 0 && l.behind <= 0) return null
+  return (
+    <span className="sync" aria-hidden="true">
+      {l.ahead > 0 && <span className="sync-up">⇡{l.ahead}</span>}
+      {l.behind > 0 && <span className="sync-down">⇣{l.behind}</span>}
+    </span>
+  )
+}
+
+/** Local main riding on the HEAD row (up to date, or only ahead). */
+function LocalTag({ local, mainRef }: { local: LocalMain; mainRef: string }) {
+  const title = localTitle(local, mainRef)
+  return (
+    <span className="local-tag" title={title} aria-label={title}>
+      <i className="local-glyph" aria-hidden="true" />
+      <span className="local-name">{local.name || 'main'}</span>
+      <LocalSync l={local} />
+      {local.worktree?.dirty && <span className="c-dirty" aria-hidden="true" />}
+    </span>
+  )
+}
+
+/** Local main where it sits on the line: a diamond on main and a plain label, no card. */
+function LocalRowView({ row, g, mainRef }: { row: LocalRow; g: Geometry; mainRef: string }) {
+  const h = g.localRowH
+  const l = row.local
+  const title = localTitle(l, mainRef)
+  return (
+    <li className="row row-local" style={{ height: h }} title={title} aria-label={title}>
+      <Rails g={g} main={row.main} lanes={row.lanes} connector={{ kind: 'none' }} mainDot={row.mainDot} splitY={h / 2} dotY={h / 2} depth={0} />
+      <span className="local-label" style={{ left: g.headContentX, height: h }}>
+        <LaptopIcon size={12} />
+        <span className="local-name">{l.name || 'main'}</span>
+        <LocalSync l={l} />
+        {l.worktree?.dirty && <span className="c-dirty" aria-hidden="true" />}
+        <span className="local-sha">{l.shortSha}</span>
+      </span>
     </li>
   )
 }
