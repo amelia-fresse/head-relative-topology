@@ -29,7 +29,7 @@ wails3 dev        # run with hot reload
 wails3 build      # produce bin/hrt
 ```
 
-Run `hrt [path]` inside a repository (defaults to the current directory).
+Run `hrt [path]`. Without a path it reopens the last repository you opened, or the current directory the first time.
 
 ## License
 

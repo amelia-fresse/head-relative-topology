@@ -13,14 +13,16 @@ import (
 var assets embed.FS
 
 func main() {
-	initialRepo := ""
+	// An explicit path wins; otherwise reopen the last repository and only
+	// fall back to the working directory when there is none to reopen.
+	initialRepo, fallbackRepo := "", ""
 	if len(os.Args) > 1 {
 		initialRepo = os.Args[1]
 	} else if wd, err := os.Getwd(); err == nil {
-		initialRepo = wd
+		fallbackRepo = wd
 	}
 
-	svc := app.New(initialRepo)
+	svc := app.New(initialRepo, fallbackRepo)
 
 	a := application.New(application.Options{
 		Name:        "hrt",

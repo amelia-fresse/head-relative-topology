@@ -43,7 +43,8 @@ func init() {
 
 // Service is bound to the frontend; every exported method becomes a binding.
 type Service struct {
-	initialRepo string
+	initialRepo  string
+	fallbackRepo string
 
 	// buildMu serialises snapshot builds (git + gh calls).
 	buildMu sync.Mutex
@@ -71,12 +72,15 @@ type Service struct {
 	cancel  context.CancelFunc
 }
 
-// New creates the service. initialRepo may be empty.
-func New(initialRepo string) *Service {
+// New creates the service. At startup it opens initialRepo (an explicit
+// path), else the last repository used, else fallbackRepo (the working
+// directory). Either may be empty.
+func New(initialRepo, fallbackRepo string) *Service {
 	return &Service{
-		initialRepo: initialRepo,
-		settings:    model.DefaultSettings(),
-		trigger:     make(chan struct{}, 1),
+		initialRepo:  initialRepo,
+		fallbackRepo: fallbackRepo,
+		settings:     model.DefaultSettings(),
+		trigger:      make(chan struct{}, 1),
 	}
 }
 
@@ -94,7 +98,7 @@ func (s *Service) ServiceStartup(ctx context.Context, _ application.ServiceOptio
 	loopCtx, cancel := context.WithCancel(context.Background())
 	s.cancel = cancel
 
-	for _, candidate := range []string{s.initialRepo, s.settings.LastRepo} {
+	for _, candidate := range []string{s.initialRepo, s.settings.LastRepo, s.fallbackRepo} {
 		if candidate == "" {
 			continue
 		}
