@@ -9,6 +9,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -58,7 +59,9 @@ type Thread struct {
 	ActiveRun    bool
 	PendingCount int
 	Archived     bool
-	UpdatedAt    time.Time
+	// Settled: the user marked the thread done in T3 Code.
+	Settled   bool
+	UpdatedAt time.Time
 }
 
 // State folds T3's statuses into what the map shows.
@@ -100,6 +103,7 @@ func NewWithRunner(run Runner) *Client {
 
 type listItem struct {
 	ThreadID  string    `json:"threadId"`
+	Settled   bool      `json:"settled"`
 	UpdatedAt time.Time `json:"updatedAt"`
 }
 
@@ -162,6 +166,7 @@ func (c *Client) Threads(ctx context.Context, project string) ([]Thread, error) 
 		if errs[i] != nil || t.ID == "" || t.Archived {
 			continue // a thread deleted between list and show, or archived
 		}
+		t.Settled = items[i].Settled // fresh on every list, even for a cached show
 		kept = append(kept, t)
 	}
 	return kept, ctx.Err()
@@ -217,18 +222,100 @@ func Attach(branches []model.Branch, threads []Thread) []model.Branch {
 			}
 		}
 		if best != nil {
-			b.Thread = &model.AgentThread{
-				ID:        best.ID,
-				Title:     best.Title,
-				State:     best.State(),
-				Link:      best.Link,
-				UpdatedAt: best.UpdatedAt,
-			}
+			b.Thread = best.agent()
 		}
 		out[i] = b
 	}
 	return out
 }
+
+// AttachMain returns a copy of local with Thread set to the most urgent
+// unsettled thread in the main checkout and ActiveThreads to how many there
+// are. Settled threads are left out: every thread ever started on main would
+// match otherwise.
+func AttachMain(local *model.LocalMain, threads []Thread) *model.LocalMain {
+	if local == nil {
+		return nil
+	}
+	l := *local
+	l.Thread, l.ActiveThreads = nil, 0
+	var best *Thread
+	for j := range threads {
+		t := &threads[j]
+		if t.Settled {
+			continue
+		}
+		match := t.Branch != "" && t.Branch == l.Name
+		if !match && t.WorktreePath != "" && l.Worktree != nil {
+			match = samePath(t.WorktreePath, l.Worktree.Path)
+		}
+		if !match {
+			continue
+		}
+		l.ActiveThreads++
+		if best == nil || urgentFirst(t, best) {
+			best = t
+		}
+	}
+	if best != nil {
+		l.Thread = best.agent()
+	}
+	return &l
+}
+
+// urgency orders agent states for AttachMain: needs you, working, failed, idle.
+var urgency = map[string]int{model.AgentWaiting: 0, model.AgentRunning: 1, model.AgentFailed: 2, model.AgentIdle: 3}
+
+// urgentFirst reports whether a should be shown before b: the more urgent
+// state, then the most recently updated.
+func urgentFirst(a, b *Thread) bool {
+	ua, ub := urgency[a.State()], urgency[b.State()]
+	if ua != ub {
+		return ua < ub
+	}
+	return a.UpdatedAt.After(b.UpdatedAt)
+}
+
+func (t *Thread) agent() *model.AgentThread {
+	link := t.Link
+	if app := AppLink(link); app != "" && hasDesktopApp() {
+		link = app
+	}
+	return &model.AgentThread{
+		ID:        t.ID,
+		Title:     t.Title,
+		State:     t.State(),
+		Link:      link,
+		UpdatedAt: t.UpdatedAt,
+	}
+}
+
+// AppLink turns a thread's web link (https://app.t3.codes/threads/<env>/<id>)
+// into the T3 Code desktop app's deep link (t3code://threads/<env>/<id>): the
+// URL the web page's "Open in desktop app" button opens. It returns "" when
+// link is not a thread link.
+func AppLink(link string) string {
+	u, err := url.Parse(link)
+	if err != nil || (u.Scheme != "https" && u.Scheme != "http") {
+		return ""
+	}
+	parts := strings.Split(strings.Trim(u.Path, "/"), "/")
+	if len(parts) != 3 || parts[0] != "threads" || parts[1] == "" || parts[2] == "" {
+		return ""
+	}
+	return "t3code://threads/" + parts[1] + "/" + parts[2]
+}
+
+// hasDesktopApp reports whether the T3 Code desktop app handles t3code://
+// links. On Linux that is a registered x-scheme-handler; macOS and Windows
+// register the scheme when the app is installed, so they are assumed to.
+var hasDesktopApp = sync.OnceValue(func() bool {
+	if runtime.GOOS != "linux" {
+		return true
+	}
+	out, err := execx.RunRaw(context.Background(), "", "xdg-mime", "query", "default", "x-scheme-handler/t3code")
+	return err == nil && strings.TrimSpace(string(out)) != ""
+})
 
 func samePath(a, b string) bool {
 	ca, cb := filepath.Clean(a), filepath.Clean(b)

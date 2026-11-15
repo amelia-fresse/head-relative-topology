@@ -2,7 +2,7 @@ import { memo, useRef, type FocusEvent, type KeyboardEvent, type MouseEvent, typ
 import { relTime } from '../format'
 import { COMPACT, NORMAL, contentX, dotX, type Geometry } from '../geometry'
 import type { BranchRow, GapRow, HeadRow, LocalRow, MergedRow, Row } from '../layout'
-import { AGENT_LABEL, AGENT_SHORT, agentStateOf, STATUS_LABEL, statusOf, locationOf, LOCATION_LABEL, type Anchor, type Branch, type LocalMain, type MergedPR, type Snapshot } from '../model'
+import { AGENT_LABEL, AGENT_SHORT, agentStateOf, STATUS_LABEL, statusOf, locationOf, LOCATION_LABEL, type AgentThread, type Anchor, type Branch, type LocalMain, type MergedPR, type Snapshot } from '../model'
 import { AgentIcon, MoreIcon, CloudIcon, LaptopIcon } from './icons'
 import { Rails } from './Rails'
 
@@ -36,9 +36,9 @@ export function BranchMap({ rows, snapshot, compact, now, actions }: MapProps) {
       {rows.map((row) => {
         switch (row.kind) {
           case 'head':
-            return <HeadRowView key={row.key} row={row} g={g} compact={compact} snapshot={snapshot} now={now} />
+            return <HeadRowView key={row.key} row={row} g={g} compact={compact} snapshot={snapshot} now={now} actions={actions} />
           case 'local':
-            return <LocalRowView key={row.key} row={row} g={g} mainRef={snapshot.main.ref || 'main'} />
+            return <LocalRowView key={row.key} row={row} g={g} compact={compact} mainRef={snapshot.main.ref || 'main'} actions={actions} />
           case 'branch':
             return <BranchRowView key={row.key} row={row} g={g} compact={compact} actions={actions} />
           case 'merged':
@@ -59,7 +59,7 @@ export function BranchMap({ rows, snapshot, compact, now, actions }: MapProps) {
 
 // ---------------------------------------------------------------------------
 
-function HeadRowView({ row, g, compact, snapshot, now }: { row: HeadRow; g: Geometry; compact: boolean; snapshot: Snapshot; now: number }) {
+function HeadRowView({ row, g, compact, snapshot, now, actions }: { row: HeadRow; g: Geometry; compact: boolean; snapshot: Snapshot; now: number; actions: MapActions }) {
   const commit = row.anchor.commit
   const fetched = relTime(snapshot.fetchedAt, now)
   const sha = commit.shortSha || commit.sha.slice(0, 7)
@@ -70,14 +70,14 @@ function HeadRowView({ row, g, compact, snapshot, now }: { row: HeadRow; g: Geom
       {compact ? (
         <div className="head-line" style={{ marginLeft: g.headContentX }} title={commit.subject}>
           <span className="head-chip">{snapshot.main.ref || 'main'}</span>
-          {row.local && <LocalTag local={row.local} mainRef={snapshot.main.ref || 'main'} />}
+          {row.local && <LocalTag local={row.local} mainRef={snapshot.main.ref || 'main'} compact={compact} actions={actions} />}
           <span className="c-meta">{fetched ? `${sha} · ${fetched}` : sha}</span>
         </div>
       ) : (
         <div className="card head-card" style={{ marginLeft: g.headContentX }} title={commit.subject}>
           <span className="title">
             <span className="name">{snapshot.main.ref || 'main'}</span>
-            {row.local && <LocalTag local={row.local} mainRef={snapshot.main.ref || 'main'} />}
+            {row.local && <LocalTag local={row.local} mainRef={snapshot.main.ref || 'main'} compact={compact} actions={actions} />}
           </span>
           <span className="meta">{metaText}</span>
         </div>
@@ -108,7 +108,7 @@ function LocalSync({ l }: { l: LocalMain }) {
 }
 
 /** Local main riding on the HEAD row (up to date, or only ahead). */
-function LocalTag({ local, mainRef }: { local: LocalMain; mainRef: string }) {
+function LocalTag({ local, mainRef, compact, actions }: { local: LocalMain; mainRef: string; compact: boolean; actions: MapActions }) {
   const title = localTitle(local, mainRef)
   return (
     <span className="local-tag" title={title} aria-label={title}>
@@ -116,12 +116,13 @@ function LocalTag({ local, mainRef }: { local: LocalMain; mainRef: string }) {
       <span className="local-name">{local.name || 'main'}</span>
       <LocalSync l={local} />
       {local.worktree?.dirty && <span className="c-dirty" aria-hidden="true" />}
+      <ThreadBadge t={local.thread} count={local.activeThreads} compact={compact} actions={actions} />
     </span>
   )
 }
 
 /** Local main where it sits on the line: a diamond on main and a plain label, no card. */
-function LocalRowView({ row, g, mainRef }: { row: LocalRow; g: Geometry; mainRef: string }) {
+function LocalRowView({ row, g, compact, mainRef, actions }: { row: LocalRow; g: Geometry; compact: boolean; mainRef: string; actions: MapActions }) {
   const h = g.localRowH
   const l = row.local
   const title = localTitle(l, mainRef)
@@ -134,6 +135,7 @@ function LocalRowView({ row, g, mainRef }: { row: LocalRow; g: Geometry; mainRef
         <LocalSync l={l} />
         {l.worktree?.dirty && <span className="c-dirty" aria-hidden="true" />}
         <span className="local-sha">{l.shortSha}</span>
+        <ThreadBadge t={l.thread} count={l.activeThreads} compact={compact} actions={actions} />
       </span>
     </li>
   )
@@ -302,7 +304,11 @@ function Sync({ b }: { b: Branch }) {
  * row's menu and the state in the row's label.
  */
 function AgentBadge({ b, compact, actions }: { b: Branch; compact: boolean; actions: MapActions }) {
-  const t = b.thread
+  return <ThreadBadge t={b.thread} compact={compact} actions={actions} />
+}
+
+/** `count` > 1 says how many threads are active, `t` being the most urgent. */
+function ThreadBadge({ t, count = 1, compact, actions }: { t: AgentThread | null | undefined; count?: number; compact: boolean; actions: MapActions }) {
   if (!t) return null
   const st = agentStateOf(t)
   const open = (e: MouseEvent<HTMLElement>) => {
@@ -310,10 +316,12 @@ function AgentBadge({ b, compact, actions }: { b: Branch; compact: boolean; acti
     actions.tipHide()
     if (t.link) actions.openLink(t.link)
   }
+  const more = count > 1 ? ` (+${count - 1} more agent${count === 2 ? '' : 's'})` : ''
   return (
-    <span className={`agent agent-${st}`} aria-hidden="true" title={`${AGENT_LABEL[st]}: ${t.title} (click to open)`} onClick={open}>
+    <span className={`agent agent-${st}`} aria-hidden="true" title={`${AGENT_LABEL[st]}: ${t.title}${more} (click to open)`} onClick={open}>
       <AgentIcon size={compact ? 12 : 12} />
       {!compact && <span className="agent-word">{AGENT_SHORT[st]}</span>}
+      {count > 1 && <span className="agent-count">{count}</span>}
     </span>
   )
 }
@@ -322,16 +330,16 @@ function CompactBranch({ b, actions }: { b: Branch; actions: MapActions }) {
   return (
     <span className="c-line">
       <LocationMark b={b} />
-      <span className="name" title={b.name}>
-        {b.name}
-      </span>
-      {b.worktree?.dirty && <span className="c-dirty" aria-hidden="true" />}
-      <AgentBadge b={b} compact actions={actions} />
       {b.pr?.title && (
         <span className="c-title" title={b.pr.title}>
           {b.pr.title}
         </span>
       )}
+      <span className={b.pr?.title ? 'name c-branch' : 'name'} title={b.name}>
+        {b.name}
+      </span>
+      {b.worktree?.dirty && <span className="c-dirty" aria-hidden="true" />}
+      <AgentBadge b={b} compact actions={actions} />
       <span className="c-meta" aria-hidden="true">
         <Sync b={b} />
         {b.pr && <span>#{b.pr.number}</span>}
@@ -349,15 +357,21 @@ function BranchCard({ row, actions }: { row: BranchRow; actions: MapActions }) {
     <span className="card">
       <span className="title">
         <LocationMark b={b} />
-        <span className="name" title={b.name}>
-          {b.name}
-        </span>
+        {b.pr?.title ? (
+          <span className="pr-title" title={b.pr.title}>
+            {b.pr.title}
+          </span>
+        ) : (
+          <span className="name" title={b.name}>
+            {b.name}
+          </span>
+        )}
         <Sync b={b} />
         <AgentBadge b={b} compact={false} actions={actions} />
       </span>
       {b.pr?.title && (
-        <span className="pr-title" title={b.pr.title}>
-          {b.pr.title}
+        <span className="name branch-sub" title={b.name}>
+          {b.name}
         </span>
       )}
       <span className="meta">

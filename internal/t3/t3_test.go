@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/amelia-fresse/head-relative-topology/internal/model"
 )
@@ -110,6 +111,53 @@ func TestState(t *testing.T) {
 	for _, c := range cases {
 		if got := c.t.State(); got != c.want {
 			t.Errorf("%+v: State() = %s, want %s", c.t, got, c.want)
+		}
+	}
+}
+
+func TestAttachMain(t *testing.T) {
+	at := func(s string) time.Time {
+		tm, _ := time.Parse(time.RFC3339, s)
+		return tm
+	}
+	ts := []Thread{
+		{ID: "settled", Branch: "main", Status: "running", Settled: true, UpdatedAt: at("2026-11-14T14:00:00Z")},
+		{ID: "idle", Branch: "main", Status: "completed", UpdatedAt: at("2026-11-14T12:00:00Z")},
+		{ID: "run", Branch: "main", Status: "running", UpdatedAt: at("2026-11-14T11:00:00Z")},
+		{ID: "wait", WorktreePath: "/repo", Status: "completed", PendingCount: 1, UpdatedAt: at("2026-11-14T09:00:00Z")},
+		{ID: "elsewhere", Branch: "feat/x", Status: "running", UpdatedAt: at("2026-11-14T13:00:00Z")},
+	}
+	local := &model.LocalMain{Name: "main", Worktree: &model.Worktree{Path: "/repo/"}}
+	got := AttachMain(local, ts)
+	if got.Thread == nil || got.Thread.ID != "wait" || got.ActiveThreads != 3 {
+		t.Errorf("main = %+v / %d, want the waiting thread of 3 unsettled", got.Thread, got.ActiveThreads)
+	}
+	if local.Thread != nil {
+		t.Error("AttachMain modified its input")
+	}
+	if got := AttachMain(local, ts[:2]); got.Thread == nil || got.Thread.ID != "idle" || got.ActiveThreads != 1 {
+		t.Errorf("idle main = %+v / %d, want the unsettled idle thread", got.Thread, got.ActiveThreads)
+	}
+	if got := AttachMain(local, ts[:1]); got.Thread != nil || got.ActiveThreads != 0 {
+		t.Errorf("settled-only main = %+v, want no thread", got.Thread)
+	}
+	if AttachMain(nil, ts) != nil {
+		t.Error("nil local main gained a value")
+	}
+}
+
+func TestAppLink(t *testing.T) {
+	cases := map[string]string{
+		"https://app.t3.codes/threads/env-1/thread-2":  "t3code://threads/env-1/thread-2",
+		"https://app.t3.codes/threads/env-1/thread-2/": "t3code://threads/env-1/thread-2",
+		"https://app.t3.codes/threads/env-1":           "",
+		"https://app.t3.codes/settings":                "",
+		"t3code://threads/env-1/thread-2":              "",
+		"":                                             "",
+	}
+	for in, want := range cases {
+		if got := AppLink(in); got != want {
+			t.Errorf("AppLink(%q) = %q, want %q", in, got, want)
 		}
 	}
 }

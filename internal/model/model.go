@@ -72,6 +72,10 @@ type LocalMain struct {
 	// Behind: remote main commits not in the local main (not pulled).
 	Behind   int       `json:"behind"`
 	Worktree *Worktree `json:"worktree"`
+	// Thread is the most urgent unsettled T3 Code thread in the main
+	// checkout; nil when there is none. ActiveThreads counts them all.
+	Thread        *AgentThread `json:"thread"`
+	ActiveThreads int          `json:"activeThreads"`
 }
 
 type Commit struct {

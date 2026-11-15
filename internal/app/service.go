@@ -645,6 +645,7 @@ func (s *Service) refreshThreads(ctx context.Context, st *repoState) {
 	if changed && st.last != nil {
 		snap = *st.last
 		snap.Branches = t3.Attach(snap.Branches, threads)
+		snap.Main.Local = t3.AttachMain(snap.Main.Local, threads)
 		st.last = &snap
 		emitIt = s.active == st
 	}
@@ -744,6 +745,7 @@ func (s *Service) rebuild(ctx context.Context, st *repoState, fetch, prs bool) (
 
 	s.mu.Lock()
 	snap.Branches = t3.Attach(snap.Branches, st.threads)
+	snap.Main.Local = t3.AttachMain(snap.Main.Local, st.threads)
 	st.last = &snap
 	st.lastLocalAt = now
 	isActive := s.active == st

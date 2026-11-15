@@ -318,6 +318,13 @@ export class LocalMain {
     "behind": number;
     "worktree": Worktree | null;
 
+    /**
+     * Thread is the most urgent unsettled T3 Code thread in the main
+     * checkout; nil when there is none. ActiveThreads counts them all.
+     */
+    "thread": AgentThread | null;
+    "activeThreads": number;
+
     /** Creates a new LocalMain instance. */
     constructor($$source: Partial<LocalMain> = {}) {
         if (!("name" in $$source)) {
@@ -341,6 +348,12 @@ export class LocalMain {
         if (!("worktree" in $$source)) {
             this["worktree"] = null;
         }
+        if (!("thread" in $$source)) {
+            this["thread"] = null;
+        }
+        if (!("activeThreads" in $$source)) {
+            this["activeThreads"] = 0;
+        }
 
         Object.assign(this, $$source);
     }
@@ -350,9 +363,13 @@ export class LocalMain {
      */
     static createFrom($$source: any = {}): LocalMain {
         const $$createField6_0 = $$createType7;
+        const $$createField7_0 = $$createType9;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("worktree" in $$parsedSource) {
             $$parsedSource["worktree"] = $$createField6_0($$parsedSource["worktree"]);
+        }
+        if ("thread" in $$parsedSource) {
+            $$parsedSource["thread"] = $$createField7_0($$parsedSource["thread"]);
         }
         return new LocalMain($$parsedSource as Partial<LocalMain>);
     }
