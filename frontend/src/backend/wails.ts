@@ -18,6 +18,7 @@ export function createWailsBackend(): Backend {
     hideBranch: (name) => Service.HideBranch(name),
     unhideBranch: (name) => Service.UnhideBranch(name),
     openURL: (url) => Service.OpenURL(url),
+    rebaseOnMain: (branch) => Service.RebaseOnMain(branch),
     copyText: async (text) => {
       try {
         await Clipboard.SetText(text)

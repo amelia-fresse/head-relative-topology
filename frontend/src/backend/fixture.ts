@@ -186,6 +186,9 @@ export function createFixtureBackend(name: FixtureName = 'sample'): Backend {
       window.open(url, '_blank', 'noopener,noreferrer')
     },
     copyText: (text) => navigator.clipboard.writeText(text),
+    rebaseOnMain: async (branch) => {
+      throw new Error(`fixture data can't start an agent for ${branch}`)
+    },
     onSnapshot: (cb) => {
       listeners.add(cb)
       return () => listeners.delete(cb)

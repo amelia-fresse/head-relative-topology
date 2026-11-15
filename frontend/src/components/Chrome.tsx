@@ -1,10 +1,10 @@
 // Small pieces around the map: banners, footer toggle, full-page states.
 import { plural } from '../format'
-import { AlertIcon, CloseIcon, CloudIcon, EyeIcon, EyeOffIcon, FolderIcon, InfoIcon } from './icons'
+import { AlertIcon, CloseIcon, CloudIcon, EyeIcon, EyeOffIcon, FolderIcon } from './icons'
 
 export interface Notice {
   id: string
-  tone: 'warning' | 'info' | 'error'
+  tone: 'warning' | 'error'
   text: string
 }
 
@@ -14,7 +14,7 @@ export function Banners({ notices, onDismiss }: { notices: Notice[]; onDismiss(i
     <div className="banners" role="status" aria-live="polite">
       {notices.map((n) => (
         <div key={n.id} className={`banner banner-${n.tone}`}>
-          <span className="banner-icon">{n.tone === 'info' ? <InfoIcon size={14} /> : <AlertIcon size={14} />}</span>
+          <span className="banner-icon"><AlertIcon size={14} /></span>
           <span className="banner-text">{n.text}</span>
           <button type="button" className="icon-btn small" onClick={() => onDismiss(n.id)} aria-label="Dismiss" title="Dismiss">
             <CloseIcon size={14} />

@@ -2,7 +2,7 @@ import { memo, useRef, type FocusEvent, type KeyboardEvent, type MouseEvent, typ
 import { relTime } from '../format'
 import { COMPACT, NORMAL, contentX, dotX, type Geometry } from '../geometry'
 import type { BranchRow, GapRow, HeadRow, LocalRow, MergedRow, Row } from '../layout'
-import { AGENT_LABEL, AGENT_SHORT, agentStateOf, STATUS_LABEL, statusOf, locationOf, LOCATION_LABEL, type AgentThread, type Anchor, type Branch, type LocalMain, type MergedPR, type Snapshot } from '../model'
+import { AGENT_LABEL, AGENT_SHORT, agentStateOf, STATUS_LABEL, statusOf, locationOf, LOCATION_LABEL, type AgentThread, type Anchor, type Branch, type BranchCopy, type LocalMain, type MergedPR, type Snapshot } from '../model'
 import { AgentIcon, MoreIcon, CloudIcon, LaptopIcon } from './icons'
 import { Rails } from './Rails'
 
@@ -206,8 +206,27 @@ function branchLabel(b: Branch): string {
   if (b.unpulled > 0) parts.push(`${b.unpulled} not pulled`)
   if (b.worktree?.dirty) parts.push('uncommitted changes')
   if (b.thread) parts.push(`${AGENT_LABEL[agentStateOf(b.thread)]}: ${b.thread.title}`)
+  if (b.copy) parts.push(`working copy ${b.copy.name}, ${copyWhere(b.copy)}`)
   if (b.hidden) parts.push('hidden')
   return parts.join(', ')
+}
+
+function copyWhere(c: BranchCopy): string {
+  return c.behind === 0 ? 'on main' : `${c.behind} behind main`
+}
+
+/** The branch's working copy (an agent's rebase), folded into its card. */
+function CopyLine({ c }: { c: BranchCopy }) {
+  return (
+    <span className="copy-line" title={`Working copy: ${c.name}`}>
+      <span className="copy-glyph" aria-hidden="true">↻</span>
+      <span className="copy-name">{c.name}</span>
+      <span className="copy-meta">
+        {copyWhere(c)} · {c.ahead} commit{c.ahead === 1 ? '' : 's'}
+      </span>
+      {c.dirty && <span className="c-dirty" aria-hidden="true" />}
+    </span>
+  )
 }
 
 const BranchRowView = memo(function BranchRowView({
@@ -343,6 +362,7 @@ function CompactBranch({ b, actions }: { b: Branch; actions: MapActions }) {
       <span className="c-meta" aria-hidden="true">
         <Sync b={b} />
         {b.pr && <span>#{b.pr.number}</span>}
+        {b.copy && <span className="copy-glyph" title={`Working copy: ${b.copy.name}, ${copyWhere(b.copy)}`}>↻</span>}
         <span>↑{b.ahead}</span>
         <span>↓{b.behind}</span>
       </span>
@@ -354,7 +374,7 @@ function BranchCard({ row, actions }: { row: BranchRow; actions: MapActions }) {
   const b = row.branch
   const st = statusOf(b)
   return (
-    <span className="card">
+    <span className={`card st-card-${st}`}>
       <span className="title">
         <LocationMark b={b} />
         {b.pr?.title ? (
@@ -395,6 +415,7 @@ function BranchCard({ row, actions }: { row: BranchRow; actions: MapActions }) {
         )}
         {row.dimmed && <Badge tone="hidden">hidden</Badge>}
       </span>
+      {b.copy && <CopyLine c={b.copy} />}
     </span>
   )
 }

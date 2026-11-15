@@ -162,7 +162,10 @@ export function computeLayout(snapshot: Snapshot, settings: LayoutSettings): Lay
   const branches = snapshot.branches ?? []
   const local = snapshot.main?.local ?? null
   const onlyRemote = !!settings.onlyRemote
-  const visible = branches.filter((b) => (!b.hidden || settings.showHidden) && (!onlyRemote || b.remote))
+  const shown = branches.filter((b) => (!b.hidden || settings.showHidden) && (!onlyRemote || b.remote))
+  // A working copy (an agent's rebase) folds into the card of the branch it is a copy of.
+  const shownNames = new Set(shown.map((b) => b.name))
+  const visible = shown.filter((b) => !b.copyOf || !shownNames.has(b.copyOf))
   const byName = new Map(visible.map((b) => [b.name, b]))
   const allByName = new Map(branches.map((b) => [b.name, b]))
 

@@ -83,6 +83,9 @@ type repoState struct {
 	threadsAt       time.Time
 	threadsInflight atomic.Bool
 	threadsErr      string // last error, logged once
+	// threadOwners maps threads hrt started (in their own worktree, on a
+	// temporary branch) to the branch they work for. Kept for this session.
+	threadOwners map[string]string
 }
 
 // Service is bound to the frontend; every exported method becomes a binding.
@@ -413,6 +416,93 @@ func (s *Service) UnhideBranch(name string) (model.Snapshot, error) {
 	return s.SaveRepoConfig(cfg)
 }
 
+// RebaseOnMain starts a T3 Code thread, in a new worktree based on branch,
+// that rebases branch onto main. The thread shows on the branch once T3
+// reports it.
+func (s *Service) RebaseOnMain(branch string) error {
+	if s.t3 == nil {
+		return errors.New("T3 Code isn't installed")
+	}
+	s.mu.Lock()
+	st := s.active
+	var b *model.Branch
+	var snap *model.Snapshot
+	if st != nil && st.last != nil {
+		snap = st.last
+		for i := range snap.Branches {
+			if snap.Branches[i].Name == branch {
+				b = &snap.Branches[i]
+				break
+			}
+		}
+	}
+	s.mu.Unlock()
+	if b == nil {
+		return fmt.Errorf("branch %s is not on the map", branch)
+	}
+
+	remote := snap.Repo.Remote
+	if remote == "" {
+		remote = "origin"
+	}
+	mainRef := snap.Main.Ref
+	if mainRef == "" {
+		mainRef = remote + "/" + snap.Repo.DefaultBranch
+	}
+	baseRef := branch
+	if !b.Local {
+		baseRef = remote + "/" + branch
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel()
+	id, err := s.t3.Start(ctx, st.repo.Path, "Rebase "+branch+" onto "+mainRef, baseRef, rebasePrompt(branch, mainRef, remote, b.Local, b.Remote))
+	if err != nil {
+		return err
+	}
+
+	s.mu.Lock()
+	if st.threadOwners == nil {
+		st.threadOwners = map[string]string{}
+	}
+	st.threadOwners[id] = branch
+	s.mu.Unlock()
+	go s.refreshThreads(context.Background(), st)
+	return nil
+}
+
+// rebasePrompt is the first message of a rebase thread. The thread's
+// worktree starts from branch on a temporary branch of T3's. A local branch
+// is moved to the result and a remote one pushed; a remote-only branch gets
+// no local copy. Once everything worked, the agent removes the worktree and
+// its temporary branch.
+func rebasePrompt(branch, mainRef, remote string, local, onRemote bool) string {
+	var b strings.Builder
+	n := 0
+	step := func(format string, args ...any) {
+		n++
+		fmt.Fprintf(&b, "%d. ", n)
+		fmt.Fprintf(&b, format, args...)
+		b.WriteString("\n")
+	}
+	fmt.Fprintf(&b, "Rebase the branch `%s` onto `%s`.\n\n", branch, mainRef)
+	fmt.Fprintf(&b, "This worktree starts from `%s`, on a temporary branch.\n\n", branch)
+	step("Run `git fetch %s`, then `git rebase %s`.", remote, mainRef)
+	step("Resolve conflicts keeping what both sides meant. If a conflict needs a decision only I can make, stop and ask me.")
+	step("Run the project's tests and checks, and fix what the rebase broke.")
+	if local {
+		step("Point `%s` at the result with `git branch -f %s HEAD`. If git refuses because `%s` is checked out in another worktree, tell me and stop here.", branch, branch, branch)
+	}
+	if onRemote {
+		step("Update the remote branch: `git push --force-with-lease %s HEAD:%s`.", remote, branch)
+	}
+	if !local {
+		step("Don't create a local `%s` branch: the remote one is all that needs updating.", branch)
+	}
+	step("Only if every step above worked, clean up: note this worktree's path (`git rev-parse --show-toplevel`) and its temporary branch (`git branch --show-current`), move to the main checkout (the folder that holds `git rev-parse --path-format=absolute --git-common-dir`), then run `git worktree remove <path>` and `git branch -D <temporary branch>`. If anything failed or needed my input, leave both in place and say so.")
+	return b.String()
+}
+
 // OpenURL opens a link (PR page) in the default browser.
 func (s *Service) OpenURL(url string) error {
 	return application.Get().Browser.OpenURL(url)
@@ -644,7 +734,7 @@ func (s *Service) refreshThreads(ctx context.Context, st *repoState) {
 	emitIt := false
 	if changed && st.last != nil {
 		snap = *st.last
-		snap.Branches = t3.Attach(snap.Branches, threads)
+		snap.Branches = t3.Attach(snap.Branches, threads, st.threadOwners)
 		snap.Main.Local = t3.AttachMain(snap.Main.Local, threads)
 		st.last = &snap
 		emitIt = s.active == st
@@ -744,7 +834,8 @@ func (s *Service) rebuild(ctx context.Context, st *repoState, fetch, prs bool) (
 	}
 
 	s.mu.Lock()
-	snap.Branches = t3.Attach(snap.Branches, st.threads)
+	snap.Branches = t3.Attach(snap.Branches, st.threads, st.threadOwners)
+	snap.Agents = s.t3 != nil
 	snap.Main.Local = t3.AttachMain(snap.Main.Local, st.threads)
 	st.last = &snap
 	st.lastLocalAt = now

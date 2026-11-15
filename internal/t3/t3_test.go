@@ -79,7 +79,7 @@ func TestThreadsCachesAndAttaches(t *testing.T) {
 		{Name: "feat/y", Worktree: &model.Worktree{Path: "/wt/y/"}},
 		{Name: "feat/z", Thread: &model.AgentThread{ID: "stale"}},
 	}
-	got := Attach(branches, ts)
+	got := Attach(branches, ts, nil)
 	if got[0].Thread == nil || got[0].Thread.ID != "a" || got[0].Thread.State != model.AgentIdle {
 		t.Errorf("feat/x thread = %+v (want the newer thread a)", got[0].Thread)
 	}
@@ -92,6 +92,10 @@ func TestThreadsCachesAndAttaches(t *testing.T) {
 	if branches[2].Thread == nil {
 		t.Error("Attach modified its input")
 	}
+	owned := Attach(branches, ts, map[string]string{"c": "feat/z"})
+	if owned[2].Thread == nil || owned[2].Thread.ID != "c" {
+		t.Errorf("feat/z thread = %+v, want c (started for it)", owned[2].Thread)
+	}
 }
 
 func TestState(t *testing.T) {
@@ -103,6 +107,9 @@ func TestState(t *testing.T) {
 		{Thread{Status: "completed", ActiveRun: true}, model.AgentRunning},
 		{Thread{Status: "completed", PendingCount: 1}, model.AgentWaiting},
 		{Thread{Status: "waiting_for_input"}, model.AgentWaiting},
+		{Thread{Status: "waiting"}, model.AgentWaiting},
+		{Thread{Status: "waiting", AwaitingWork: true}, model.AgentRunning},
+		{Thread{Status: "waiting", AwaitingWork: true, PendingCount: 1}, model.AgentWaiting},
 		{Thread{Status: "failed"}, model.AgentFailed},
 		{Thread{Status: "interrupted"}, model.AgentFailed},
 		{Thread{Status: "completed"}, model.AgentIdle},
@@ -159,5 +166,50 @@ func TestAppLink(t *testing.T) {
 		if got := AppLink(in); got != want {
 			t.Errorf("AppLink(%q) = %q, want %q", in, got, want)
 		}
+	}
+}
+
+func TestStart(t *testing.T) {
+	var got []string
+	c := NewWithRunner(func(_ context.Context, args ...string) ([]byte, error) {
+		got = args
+		return []byte(`{"threadId":"t-1","runId":"r-1"}`), nil
+	})
+	id, err := c.Start(context.Background(), "/repo", "Rebase x", "feat/x", "do it")
+	if err != nil || id != "t-1" {
+		t.Fatalf("Start = %q, %v", id, err)
+	}
+	want := "thread start /repo do it --title Rebase x --worktree feat/x --json"
+	if strings.Join(got, " ") != want {
+		t.Errorf("args = %q, want %q", strings.Join(got, " "), want)
+	}
+}
+
+func TestAttachLinksWorkingCopy(t *testing.T) {
+	branches := []model.Branch{
+		{Name: "feat/x", PR: &model.PullRequest{Number: 7}},
+		{Name: "t3/rebase-x", Ahead: 3, Worktree: &model.Worktree{Path: "/wt/r", Dirty: true}},
+		{Name: "other"},
+	}
+	ts := []Thread{{ID: "r", Branch: "t3/rebase-x", WorktreePath: "/wt/r", Status: "running"}}
+	got := Attach(branches, ts, map[string]string{"r": "feat/x"})
+	if got[1].CopyOf != "feat/x" {
+		t.Errorf("copy's CopyOf = %q, want feat/x", got[1].CopyOf)
+	}
+	if c := got[0].Copy; c == nil || c.Name != "t3/rebase-x" || c.Ahead != 3 || !c.Dirty {
+		t.Errorf("feat/x Copy = %+v", c)
+	}
+	if got[0].Thread == nil || got[0].Thread.ID != "r" {
+		t.Errorf("feat/x thread = %+v, want r", got[0].Thread)
+	}
+	if got[2].CopyOf != "" || got[2].Copy != nil {
+		t.Errorf("unrelated branch linked: %+v", got[2])
+	}
+	if again := Attach(got, nil, nil); again[1].CopyOf != "" || again[0].Copy != nil {
+		t.Error("links survive once the thread is gone")
+	}
+	ts[0].Title = "Rebase feat/x onto origin/main"
+	if byTitle := Attach(branches, ts, nil); byTitle[1].CopyOf != "feat/x" {
+		t.Error("a rebase thread's title doesn't link its copy after a restart")
 	}
 }

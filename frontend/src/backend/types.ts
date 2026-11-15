@@ -19,6 +19,8 @@ export interface Backend {
   hideBranch(name: string): Promise<Snapshot>
   unhideBranch(name: string): Promise<Snapshot>
   openURL(url: string): Promise<void>
+  /** Starts a T3 Code thread, in a new worktree, that rebases the branch onto main. */
+  rebaseOnMain(branch: string): Promise<void>
   copyText(text: string): Promise<void>
   /** Subscribes to pushed snapshots; returns an unsubscribe function. */
   onSnapshot(cb: (s: Snapshot) => void): () => void

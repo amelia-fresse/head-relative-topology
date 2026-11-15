@@ -8,10 +8,12 @@ package t3
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"sort"
 	"strings"
@@ -60,18 +62,28 @@ type Thread struct {
 	PendingCount int
 	Archived     bool
 	// Settled: the user marked the thread done in T3 Code.
-	Settled   bool
-	UpdatedAt time.Time
+	Settled bool
+	// AwaitingWork: the agent paused its turn until a background task it
+	// started, or another thread, finishes. It resumes on its own.
+	AwaitingWork bool
+	UpdatedAt    time.Time
 }
 
 // State folds T3's statuses into what the map shows.
 func (t Thread) State() string {
 	s := strings.ToLower(t.Status)
 	switch {
-	case t.PendingCount > 0 || strings.Contains(s, "waiting") || strings.Contains(s, "input") || strings.Contains(s, "approval"):
+	case t.PendingCount > 0 || strings.Contains(s, "input") || strings.Contains(s, "approval"):
 		return model.AgentWaiting
 	case t.ActiveRun || s == "running" || s == "starting" || s == "queued":
 		return model.AgentRunning
+	case strings.Contains(s, "waiting"):
+		// T3's "waiting" is usually the agent waiting on its own background
+		// work; only with nothing to wait on is it waiting for you.
+		if t.AwaitingWork {
+			return model.AgentRunning
+		}
+		return model.AgentWaiting
 	case s == "failed" || s == "error" || s == "interrupted":
 		return model.AgentFailed
 	default:
@@ -102,9 +114,26 @@ func NewWithRunner(run Runner) *Client {
 }
 
 type listItem struct {
-	ThreadID  string    `json:"threadId"`
-	Settled   bool      `json:"settled"`
+	ThreadID            string `json:"threadId"`
+	Settled             bool   `json:"settled"`
+	BlockedOnThreadWait bool   `json:"blockedOnThreadWait"`
+	BackgroundTasks     []struct {
+		Awaited bool `json:"awaited"`
+	} `json:"pendingBackgroundTasks"`
 	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// awaitingWork reports whether the agent paused its turn on background work.
+func (it listItem) awaitingWork() bool {
+	if it.BlockedOnThreadWait {
+		return true
+	}
+	for _, bt := range it.BackgroundTasks {
+		if bt.Awaited {
+			return true
+		}
+	}
+	return false
 }
 
 type showOut struct {
@@ -166,7 +195,9 @@ func (c *Client) Threads(ctx context.Context, project string) ([]Thread, error) 
 		if errs[i] != nil || t.ID == "" || t.Archived {
 			continue // a thread deleted between list and show, or archived
 		}
-		t.Settled = items[i].Settled // fresh on every list, even for a cached show
+		// Fresh on every list, even for a cached show.
+		t.Settled = items[i].Settled
+		t.AwaitingWork = items[i].awaitingWork()
 		kept = append(kept, t)
 	}
 	return kept, ctx.Err()
@@ -204,16 +235,41 @@ func (c *Client) show(ctx context.Context, id string) (Thread, error) {
 	return t, nil
 }
 
+// Start starts a thread in project (a path inside it) with message as its
+// first prompt, in a new worktree based on baseRef, and returns its id. T3
+// puts the worktree on a temporary branch, since baseRef's branch may be
+// checked out elsewhere.
+func (c *Client) Start(ctx context.Context, project, title, baseRef, message string) (string, error) {
+	out, err := c.run(ctx, "thread", "start", project, message, "--title", title, "--worktree", baseRef, "--json")
+	if err != nil {
+		// The command line holds the whole prompt; T3's own message is enough.
+		var xe *execx.Error
+		if errors.As(err, &xe) {
+			return "", fmt.Errorf("t3: %s", xe.Stderr)
+		}
+		return "", err
+	}
+	var r struct {
+		ThreadID string `json:"threadId"`
+	}
+	if err := json.Unmarshal(out, &r); err != nil || r.ThreadID == "" {
+		return "", fmt.Errorf("t3 thread start: unexpected output %q", strings.TrimSpace(string(out)))
+	}
+	return r.ThreadID, nil
+}
+
 // Attach returns branches with Thread set to the most recently updated
-// thread working on each branch (same branch name, or same worktree).
-func Attach(branches []model.Branch, threads []Thread) []model.Branch {
+// thread working on each branch: same branch name, same worktree, or started
+// for it (owners maps thread id to branch name, for threads hrt started in a
+// worktree of their own).
+func Attach(branches []model.Branch, threads []Thread, owners map[string]string) []model.Branch {
 	out := make([]model.Branch, len(branches))
 	for i, b := range branches {
 		b.Thread = nil
 		var best *Thread
 		for j := range threads {
 			t := &threads[j]
-			match := t.Branch != "" && t.Branch == b.Name
+			match := (t.Branch != "" && t.Branch == b.Name) || ownerOf(t, owners) == b.Name
 			if !match && t.WorktreePath != "" && b.Worktree != nil {
 				match = samePath(t.WorktreePath, b.Worktree.Path)
 			}
@@ -224,9 +280,57 @@ func Attach(branches []model.Branch, threads []Thread) []model.Branch {
 		if best != nil {
 			b.Thread = best.agent()
 		}
+		b.CopyOf, b.Copy = "", nil
 		out[i] = b
 	}
+	linkCopies(out, threads, owners)
 	return out
+}
+
+// ownerOf is the branch a thread was started for: from owners (this
+// session) or, after a restart, from the title hrt gives rebase threads.
+func ownerOf(t *Thread, owners map[string]string) string {
+	if b := owners[t.ID]; b != "" {
+		return b
+	}
+	if m := rebaseTitle.FindStringSubmatch(t.Title); m != nil {
+		return m[1]
+	}
+	return ""
+}
+
+// rebaseTitle matches the title of threads started by Service.RebaseOnMain.
+var rebaseTitle = regexp.MustCompile(`^Rebase (\S+) onto \S+$`)
+
+// linkCopies marks the branch checked out in each owned thread's worktree as
+// a working copy of the branch the thread was started for.
+func linkCopies(branches []model.Branch, threads []Thread, owners map[string]string) {
+	index := make(map[string]int, len(branches))
+	for i, b := range branches {
+		index[b.Name] = i
+	}
+	for _, t := range threads {
+		owner, ok := index[ownerOf(&t, owners)]
+		if !ok {
+			continue
+		}
+		for i := range branches {
+			c := &branches[i]
+			if i == owner || c.CopyOf != "" {
+				continue
+			}
+			match := t.Branch != "" && t.Branch == c.Name
+			if !match && t.WorktreePath != "" && c.Worktree != nil {
+				match = samePath(t.WorktreePath, c.Worktree.Path)
+			}
+			if !match {
+				continue
+			}
+			c.CopyOf = branches[owner].Name
+			branches[owner].Copy = &model.BranchCopy{Name: c.Name, Ahead: c.Ahead, Behind: c.Behind, Dirty: c.Worktree != nil && c.Worktree.Dirty}
+			break
+		}
+	}
 }
 
 // AttachMain returns a copy of local with Thread set to the most urgent

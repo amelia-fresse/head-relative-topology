@@ -210,10 +210,6 @@ button {
   color: var(--st-ci-failing);
 }
 
-.banner-info .banner-icon {
-  color: var(--st-review);
-}
-
 .banner-text {
   flex: 1;
   min-width: 0;
@@ -1346,4 +1342,75 @@ button {
 
 .head-card .agent:hover {
   background: var(--surface-hover);
+}
+
+/* ---- with a pull request vs without
+   A branch with a PR is a filled card with a bar in its status colour; one
+   without has no fill, a grey name and a smaller dot. The border keeps saying
+   where the branch lives (solid, dashed, none). */
+
+.st-card-review { --st-accent: var(--st-review); }
+.st-card-approved { --st-accent: var(--st-approved); }
+.st-card-ci_failing { --st-accent: var(--st-ci-failing); }
+.st-card-conflicts { --st-accent: var(--st-conflicts); }
+.st-card-draft { --st-accent: var(--st-draft); }
+
+.row-branch.has-pr .card {
+  padding-left: 8px; /* keeps the text where a 1px border would put it */
+  border-left: 3px solid var(--st-accent, var(--border-strong));
+  background: var(--surface);
+}
+
+.row-branch.has-pr .hit:hover .card {
+  background: var(--surface-hover);
+}
+
+.row-branch:not(.has-pr) .card {
+  background: transparent;
+}
+
+.row-branch:not(.has-pr) .hit:hover .card {
+  background: var(--surface);
+}
+
+.row-branch:not(.has-pr) .name {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.row-branch:not(.has-pr) .dot {
+  transform: scale(0.7);
+}
+
+/* ---- a branch's working copy (an agent's rebase), folded into its card */
+
+.copy-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  margin-top: 2px;
+  padding-top: 5px;
+  border-top: 1px dashed var(--border-strong);
+  color: var(--muted);
+  font-size: 11.5px;
+  line-height: 16px;
+}
+
+.copy-glyph {
+  flex-shrink: 0;
+  color: var(--st-review);
+}
+
+.copy-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+}
+
+.copy-meta {
+  flex-shrink: 0;
+  white-space: nowrap;
 }

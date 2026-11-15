@@ -5,6 +5,7 @@ export {
     AgentThread,
     Anchor,
     Branch,
+    BranchCopy,
     Commit,
     LocalMain,
     MainLine,

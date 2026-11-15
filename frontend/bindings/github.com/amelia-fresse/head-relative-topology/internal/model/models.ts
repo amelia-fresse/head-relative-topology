@@ -177,6 +177,18 @@ export class Branch {
     "thread": AgentThread | null;
 
     /**
+     * CopyOf is set on a working copy of another branch: the branch checked
+     * out in the worktree of an agent hrt started for CopyOf (a rebase). The
+     * map folds it into CopyOf's card.
+     */
+    "copyOf": string;
+
+    /**
+     * Copy is this branch's working copy, while one exists.
+     */
+    "copy": BranchCopy | null;
+
+    /**
      * Hidden is set by the user's hide rules; HiddenReason says which rule.
      */
     "hidden": boolean;
@@ -229,6 +241,12 @@ export class Branch {
         if (!("thread" in $$source)) {
             this["thread"] = null;
         }
+        if (!("copyOf" in $$source)) {
+            this["copyOf"] = "";
+        }
+        if (!("copy" in $$source)) {
+            this["copy"] = null;
+        }
         if (!("hidden" in $$source)) {
             this["hidden"] = false;
         }
@@ -246,6 +264,7 @@ export class Branch {
         const $$createField12_0 = $$createType5;
         const $$createField13_0 = $$createType7;
         const $$createField14_0 = $$createType9;
+        const $$createField16_0 = $$createType11;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("pr" in $$parsedSource) {
             $$parsedSource["pr"] = $$createField12_0($$parsedSource["pr"]);
@@ -256,7 +275,50 @@ export class Branch {
         if ("thread" in $$parsedSource) {
             $$parsedSource["thread"] = $$createField14_0($$parsedSource["thread"]);
         }
+        if ("copy" in $$parsedSource) {
+            $$parsedSource["copy"] = $$createField16_0($$parsedSource["copy"]);
+        }
         return new Branch($$parsedSource as Partial<Branch>);
+    }
+}
+
+/**
+ * BranchCopy summarises a branch's working copy (see Branch.CopyOf).
+ */
+export class BranchCopy {
+    "name": string;
+
+    /**
+     * Ahead / Behind are the copy's, relative to main.
+     */
+    "ahead": number;
+    "behind": number;
+    "dirty": boolean;
+
+    /** Creates a new BranchCopy instance. */
+    constructor($$source: Partial<BranchCopy> = {}) {
+        if (!("name" in $$source)) {
+            this["name"] = "";
+        }
+        if (!("ahead" in $$source)) {
+            this["ahead"] = 0;
+        }
+        if (!("behind" in $$source)) {
+            this["behind"] = 0;
+        }
+        if (!("dirty" in $$source)) {
+            this["dirty"] = false;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new BranchCopy instance from a string or object.
+     */
+    static createFrom($$source: any = {}): BranchCopy {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new BranchCopy($$parsedSource as Partial<BranchCopy>);
     }
 }
 
@@ -420,8 +482,8 @@ export class MainLine {
      */
     static createFrom($$source: any = {}): MainLine {
         const $$createField1_0 = $$createType0;
-        const $$createField2_0 = $$createType11;
-        const $$createField4_0 = $$createType13;
+        const $$createField2_0 = $$createType13;
+        const $$createField4_0 = $$createType15;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("head" in $$parsedSource) {
             $$parsedSource["head"] = $$createField1_0($$parsedSource["head"]);
@@ -811,6 +873,11 @@ export class Snapshot {
      */
     "warnings": string[];
 
+    /**
+     * Agents is true when the T3 Code CLI is available to start threads.
+     */
+    "agents": boolean;
+
     /** Creates a new Snapshot instance. */
     constructor($$source: Partial<Snapshot> = {}) {
         if (!("repo" in $$source)) {
@@ -831,6 +898,9 @@ export class Snapshot {
         if (!("warnings" in $$source)) {
             this["warnings"] = [];
         }
+        if (!("agents" in $$source)) {
+            this["agents"] = false;
+        }
 
         Object.assign(this, $$source);
     }
@@ -839,9 +909,9 @@ export class Snapshot {
      * Creates a new Snapshot instance from a string or object.
      */
     static createFrom($$source: any = {}): Snapshot {
-        const $$createField0_0 = $$createType14;
-        const $$createField1_0 = $$createType15;
-        const $$createField2_0 = $$createType17;
+        const $$createField0_0 = $$createType16;
+        const $$createField1_0 = $$createType17;
+        const $$createField2_0 = $$createType19;
         const $$createField5_0 = $$createType1;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("repo" in $$parsedSource) {
@@ -974,11 +1044,13 @@ const $$createType6 = Worktree.createFrom;
 const $$createType7 = $Create.Nullable($$createType6);
 const $$createType8 = AgentThread.createFrom;
 const $$createType9 = $Create.Nullable($$createType8);
-const $$createType10 = Anchor.createFrom;
-const $$createType11 = $Create.Array($$createType10);
-const $$createType12 = LocalMain.createFrom;
-const $$createType13 = $Create.Nullable($$createType12);
-const $$createType14 = RepoInfo.createFrom;
-const $$createType15 = MainLine.createFrom;
-const $$createType16 = Branch.createFrom;
-const $$createType17 = $Create.Array($$createType16);
+const $$createType10 = BranchCopy.createFrom;
+const $$createType11 = $Create.Nullable($$createType10);
+const $$createType12 = Anchor.createFrom;
+const $$createType13 = $Create.Array($$createType12);
+const $$createType14 = LocalMain.createFrom;
+const $$createType15 = $Create.Nullable($$createType14);
+const $$createType16 = RepoInfo.createFrom;
+const $$createType17 = MainLine.createFrom;
+const $$createType18 = Branch.createFrom;
+const $$createType19 = $Create.Array($$createType18);

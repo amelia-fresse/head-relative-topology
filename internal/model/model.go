@@ -34,6 +34,8 @@ type Snapshot struct {
 	FetchedAt time.Time `json:"fetchedAt"`
 	// Warnings are non-fatal problems (gh missing, not logged in, fetch failed…).
 	Warnings []string `json:"warnings"`
+	// Agents is true when the T3 Code CLI is available to start threads.
+	Agents bool `json:"agents"`
 }
 
 type RepoInfo struct {
@@ -142,6 +144,12 @@ type Branch struct {
 
 	// Thread is the T3 Code agent thread working on this branch, if any.
 	Thread *AgentThread `json:"thread"`
+	// CopyOf is set on a working copy of another branch: the branch checked
+	// out in the worktree of an agent hrt started for CopyOf (a rebase). The
+	// map folds it into CopyOf's card.
+	CopyOf string `json:"copyOf"`
+	// Copy is this branch's working copy, while one exists.
+	Copy *BranchCopy `json:"copy"`
 
 	// Hidden is set by the user's hide rules; HiddenReason says which rule.
 	Hidden       bool   `json:"hidden"`
@@ -155,6 +163,15 @@ const (
 	AgentFailed  = "failed"
 	AgentIdle    = "idle"
 )
+
+// BranchCopy summarises a branch's working copy (see Branch.CopyOf).
+type BranchCopy struct {
+	Name string `json:"name"`
+	// Ahead / Behind are the copy's, relative to main.
+	Ahead  int  `json:"ahead"`
+	Behind int  `json:"behind"`
+	Dirty  bool `json:"dirty"`
+}
 
 // AgentThread is a T3 Code thread working on a branch.
 type AgentThread struct {

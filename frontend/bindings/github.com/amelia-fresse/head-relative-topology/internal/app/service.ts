@@ -79,6 +79,15 @@ export function PickRepo(): $CancellablePromise<model$0.Snapshot> {
 }
 
 /**
+ * RebaseOnMain starts a T3 Code thread, in a new worktree based on branch,
+ * that rebases branch onto main. The thread shows on the branch once T3
+ * reports it.
+ */
+export function RebaseOnMain(branch: string): $CancellablePromise<void> {
+    return $Call.ByID(433313223, branch);
+}
+
+/**
  * Refresh recomputes the active tab; fetch=true runs `git fetch` first.
  * GitHub data is always re-queried.
  */

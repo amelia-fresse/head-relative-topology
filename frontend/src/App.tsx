@@ -18,6 +18,9 @@ const TIP_DELAY_MS = 450
 export default function App() {
   const [backend, setBackend] = useState<Backend | null>(null)
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null)
+  // Read by the context menu when it opens, so the map's actions stay stable.
+  const snapshotRef = useRef(snapshot)
+  snapshotRef.current = snapshot
   const [tabs, setTabs] = useState<Tab[]>([])
   const [settings, setSettings] = useState<Settings>(defaultSettings)
   const [phase, setPhase] = useState<Phase>({ kind: 'loading' })
@@ -51,7 +54,7 @@ export default function App() {
       activePathRef.current = c.snapshot.repo?.path || null
       setSnapshot(c.snapshot)
       c.backend.tabs().then(setTabs, () => {})
-      if (c.fallbackReason) notify('info', c.fallbackReason)
+      if (c.fallbackReason) notify('warning', c.fallbackReason)
       setPhase({ kind: 'ready' })
     } catch (e) {
       // Keep a backend around so "Open another repository" and pushed snapshots still work.
@@ -195,7 +198,7 @@ export default function App() {
         .then((s) => {
           setSnapshot(s)
           const still = s.branches.find((x) => x.name === name)
-          if (!hide && still?.hidden) notify('info', `${name} is still hidden by a rule: ${still.hiddenReason || 'hide rule'}.`)
+          if (!hide && still?.hidden) notify('warning', `${name} is still hidden by a rule: ${still.hiddenReason || 'hide rule'}.`)
         })
         .catch((e) => notify('error', `Couldn’t ${hide ? 'hide' : 'unhide'} ${name}: ${errorMessage(e)}`))
     },
@@ -205,6 +208,14 @@ export default function App() {
   const copy = useCallback(
     (text: string) => {
       backendRef.current?.copyText(text).catch((e) => notify('error', `Couldn’t copy: ${errorMessage(e)}`))
+    },
+    [backendRef, notify],
+  )
+
+  const rebaseOnMain = useCallback(
+    (branch: string, mainRef: string) => {
+      // Success shows as the agent badge on the branch; only failures notify.
+      backendRef.current?.rebaseOnMain(branch).catch((e) => notify('error', `Couldn’t start the agent to rebase onto ${mainRef}: ${errorMessage(e)}`))
     },
     [backendRef, notify],
   )
@@ -230,6 +241,7 @@ export default function App() {
         ]
       }
       const b = t.branch
+      const mainRef = snapshotRef.current?.main.ref || 'main'
       return [
         {
           label: 'Open pull request',
@@ -239,6 +251,15 @@ export default function App() {
         },
         ...(b.thread?.link
           ? [{ label: 'Open agent thread', icon: <AgentIcon size={14} />, onSelect: () => openURL(b.thread!.link) }]
+          : []),
+        ...(snapshotRef.current?.agents
+          ? [
+              {
+                label: `Rebase onto ${mainRef} with an agent`,
+                icon: <AgentIcon size={14} />,
+                onSelect: () => rebaseOnMain(b.name, mainRef),
+              },
+            ]
           : []),
         {
           label: 'Copy branch name',
@@ -282,7 +303,7 @@ export default function App() {
       tipHide: hideTip,
       openLink: openURL,
     }
-  }, [openURL, copy, setHidden, hideTip, menuOpenRef])
+  }, [openURL, copy, setHidden, hideTip, menuOpenRef, rebaseOnMain])
 
   // Tooltips are positioned once; drop them when the list scrolls.
   useEffect(() => {

@@ -367,3 +367,26 @@ describe('only remote branches', () => {
     expect(shape(rows)).toEqual(['HEAD', 'gap 2', 'c'])
   })
 })
+
+describe('working copies', () => {
+  it('folds a working copy into the card of the branch it copies', () => {
+    const snap = snapshot(
+      [anchor('h', 0, { branchNames: ['t3/rebase-x'] }), anchor('m', 5, { branchNames: ['feat/x'] })],
+      [
+        branch('t3/rebase-x', 0, { copyOf: 'feat/x', remote: false } as Partial<Branch>),
+        branch('feat/x', 5, { copy: { name: 't3/rebase-x', ahead: 1, behind: 0, dirty: false } } as Partial<Branch>),
+      ],
+    )
+    const names = computeLayout(snap, ALL).rows.flatMap((r) => (r.kind === 'branch' ? [r.branch.name] : []))
+    expect(names).toEqual(['feat/x'])
+  })
+
+  it('keeps the copy when the branch it copies is not shown', () => {
+    const snap = snapshot(
+      [anchor('h', 0, { branchNames: ['t3/rebase-x'] }), anchor('m', 5, { branchNames: ['feat/x'] })],
+      [branch('t3/rebase-x', 0, { copyOf: 'feat/x' } as Partial<Branch>), branch('feat/x', 5, { hidden: true })],
+    )
+    const names = computeLayout(snap, ALL).rows.flatMap((r) => (r.kind === 'branch' ? [r.branch.name] : []))
+    expect(names).toEqual(['t3/rebase-x'])
+  })
+})
