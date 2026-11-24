@@ -218,7 +218,9 @@ type Settings struct {
 	ShowMerged bool   `json:"showMerged" toml:"show_merged"`
 	ShowHidden bool   `json:"showHidden" toml:"show_hidden"`
 	// OnlyRemote hides branches that exist only on this machine.
-	OnlyRemote  bool `json:"onlyRemote" toml:"only_remote"`
+	OnlyRemote bool `json:"onlyRemote" toml:"only_remote"`
+	// OnlyPRs hides branches without an open pull request.
+	OnlyPRs     bool `json:"onlyPRs" toml:"only_prs"`
 	AlwaysOnTop bool `json:"alwaysOnTop" toml:"always_on_top"`
 	// FetchIntervalSec: how often to run `git fetch` (0 = never automatically).
 	FetchIntervalSec int `json:"fetchIntervalSec" toml:"fetch_interval_sec"`

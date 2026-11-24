@@ -31,6 +31,18 @@ export const RefreshIcon = (p: P) => (
   </Icon>
 )
 
+/** Git pull request. */
+export const PullRequestIcon = (p: P) => (
+  <Icon {...p}>
+    <circle cx="6" cy="6" r="2" />
+    <circle cx="6" cy="18" r="2" />
+    <circle cx="18" cy="18" r="2" />
+    <path d="M6 8v8" />
+    <path d="M18 16V9a3 3 0 0 0-3-3h-4" />
+    <path d="M13 3.5 10.5 6 13 8.5" />
+  </Icon>
+)
+
 /** Dense list: compact toggle. */
 export const CompactIcon = (p: P) => (
   <Icon {...p}>

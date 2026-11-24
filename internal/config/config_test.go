@@ -146,6 +146,7 @@ func TestRoundTrip(t *testing.T) {
 		Compact:           true,
 		ShowMerged:        false,
 		ShowHidden:        true,
+		OnlyPRs:           true,
 		AlwaysOnTop:       true,
 		FetchIntervalSec:  0,
 		PRPollIntervalSec: 300,

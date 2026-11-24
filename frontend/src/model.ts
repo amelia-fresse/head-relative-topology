@@ -58,6 +58,7 @@ export function defaultSettings(): Settings {
     showMerged: true,
     showHidden: false,
     onlyRemote: false,
+    onlyPRs: false,
     alwaysOnTop: false,
     fetchIntervalSec: 120,
     prPollIntervalSec: 60,
@@ -68,7 +69,7 @@ export function defaultSettings(): Settings {
 }
 
 /** The subset of settings the layout depends on. */
-export type LayoutSettings = Pick<Settings, 'showMerged' | 'showHidden'> & Partial<Pick<Settings, 'onlyRemote'>>
+export type LayoutSettings = Pick<Settings, 'showMerged' | 'showHidden'> & Partial<Pick<Settings, 'onlyRemote' | 'onlyPRs'>>
 
 export type AgentState = 'running' | 'waiting' | 'failed' | 'idle'
 

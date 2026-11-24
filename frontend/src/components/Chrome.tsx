@@ -1,6 +1,6 @@
 // Small pieces around the map: banners, footer toggle, full-page states.
 import { plural } from '../format'
-import { AlertIcon, CloseIcon, CloudIcon, EyeIcon, EyeOffIcon, FolderIcon } from './icons'
+import { AlertIcon, CloseIcon, CloudIcon, EyeIcon, EyeOffIcon, FolderIcon, PullRequestIcon } from './icons'
 
 export interface Notice {
   id: string
@@ -35,6 +35,22 @@ export function LocalOnlyNote({ count, onShow }: { count: number; onShow(): void
         <span>
           Only remote branches
           <span className="muted"> · {plural(count, 'local-only branch', 'local-only branches')} not shown</span>
+        </span>
+      </button>
+    </footer>
+  )
+}
+
+/** Shown while "only pull request branches" leaves branches without a PR out. */
+export function NoPRNote({ count, onShow }: { count: number; onShow(): void }) {
+  if (count === 0) return null
+  return (
+    <footer className="footer">
+      <button type="button" className="text-btn" onClick={onShow} title="Show branches without a pull request again (p)">
+        <PullRequestIcon size={14} />
+        <span>
+          Only pull request branches
+          <span className="muted"> · {plural(count, 'branch', 'branches')} without one not shown</span>
         </span>
       </button>
     </footer>
@@ -105,10 +121,20 @@ export function NoRepo({ onPick, busy }: { onPick(): void; busy: boolean }) {
   )
 }
 
-export function EmptyMap({ hiddenCount, localOnlyCount = 0 }: { hiddenCount: number; localOnlyCount?: number }) {
+export function EmptyMap({
+  hiddenCount,
+  localOnlyCount = 0,
+  noPRCount = 0,
+}: {
+  hiddenCount: number
+  localOnlyCount?: number
+  noPRCount?: number
+}) {
   return (
     <div className="empty">
-      {localOnlyCount > 0 ? (
+      {noPRCount > 0 ? (
+        <p>No open pull requests. {plural(noPRCount, 'branch without one is', 'branches without one are')} not shown (press p).</p>
+      ) : localOnlyCount > 0 ? (
         <p>No branches on the remote. {plural(localOnlyCount, 'local-only branch is', 'local-only branches are')} not shown (press l).</p>
       ) : hiddenCount > 0 ? (
         <p>

@@ -1,6 +1,6 @@
 import { relTime } from '../format'
 import type { Settings, Snapshot } from '../model'
-import { CloudIcon, CompactIcon, MergeIcon, RefreshIcon, ThemeIcon } from './icons'
+import { CloudIcon, CompactIcon, MergeIcon, PullRequestIcon, RefreshIcon, ThemeIcon } from './icons'
 
 interface Props {
   snapshot: Snapshot | null
@@ -11,12 +11,13 @@ interface Props {
   onToggleCompact(): void
   onToggleMerged(): void
   onToggleOnlyRemote(): void
+  onToggleOnlyPRs(): void
   onCycleTheme(): void
 }
 
 const THEME_LABEL: Record<string, string> = { default: 'Default', babydoll: 'Babydoll', dolly: 'Dolly' }
 
-export function Header({ snapshot, settings, now, refreshing, onRefresh, onToggleCompact, onToggleMerged, onToggleOnlyRemote, onCycleTheme }: Props) {
+export function Header({ snapshot, settings, now, refreshing, onRefresh, onToggleCompact, onToggleMerged, onToggleOnlyRemote, onToggleOnlyPRs, onCycleTheme }: Props) {
   const repo = snapshot?.repo
   const fetched = snapshot ? relTime(snapshot.fetchedAt, now) : null
   const themeLabel = THEME_LABEL[settings.theme] ?? settings.theme
@@ -71,6 +72,16 @@ export function Header({ snapshot, settings, now, refreshing, onRefresh, onToggl
           title={`Only remote branches: ${settings.onlyRemote ? 'on' : 'off'} (l)`}
         >
           <CloudIcon />
+        </button>
+        <button
+          type="button"
+          className="icon-btn"
+          onClick={onToggleOnlyPRs}
+          aria-pressed={settings.onlyPRs}
+          aria-label="Only branches with a pull request"
+          title={`Only branches with a pull request: ${settings.onlyPRs ? 'on' : 'off'} (p)`}
+        >
+          <PullRequestIcon />
         </button>
         <button
           type="button"

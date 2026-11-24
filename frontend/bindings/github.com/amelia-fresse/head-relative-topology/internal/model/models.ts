@@ -768,6 +768,11 @@ export class Settings {
      * OnlyRemote hides branches that exist only on this machine.
      */
     "onlyRemote": boolean;
+
+    /**
+     * OnlyPRs hides branches without an open pull request.
+     */
+    "onlyPRs": boolean;
     "alwaysOnTop": boolean;
 
     /**
@@ -811,6 +816,9 @@ export class Settings {
         }
         if (!("onlyRemote" in $$source)) {
             this["onlyRemote"] = false;
+        }
+        if (!("onlyPRs" in $$source)) {
+            this["onlyPRs"] = false;
         }
         if (!("alwaysOnTop" in $$source)) {
             this["alwaysOnTop"] = false;

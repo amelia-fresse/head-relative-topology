@@ -368,6 +368,40 @@ describe('only remote branches', () => {
   })
 })
 
+describe('only pull request branches', () => {
+  const pr = { number: 1, title: 't', url: 'u' } as Branch['pr']
+
+  it('leaves branches without a PR out and counts them', () => {
+    const l = computeLayout(snap, { ...ALL, onlyPRs: true })
+    const names = l.rows.filter((r): r is BranchRow => r.kind === 'branch').map((r) => r.branch.name)
+    expect(names).not.toContain('chore/deps-bump')
+    expect(names).toContain('feat/ifc-export')
+    expect(names.every((n) => !!snap.branches.find((b) => b.name === n)!.pr)).toBe(true)
+    // chore/deps-bump has no PR and is visible; archive/old-spike has none but is hidden.
+    expect(l.noPRCount).toBe(1)
+    expect(l.hiddenCount).toBe(1)
+  })
+
+  it('re-attaches a stacked branch to main when its parent has no PR', () => {
+    const s = snapshot(
+      [anchor('h', 0), anchor('a', 3, { branchNames: ['p'] })],
+      [branch('p', 3), branch('c', 3, { parent: 'p', pr })],
+    )
+    const { rows } = computeLayout(s, { ...ALL, onlyPRs: true })
+    expect(shape(rows)).toEqual(['HEAD', 'gap 2', 'c'])
+  })
+
+  it('does not count working copies as left out', () => {
+    const s = snapshot(
+      [anchor('h', 0, { branchNames: ['t3/rebase-x'] }), anchor('m', 5, { branchNames: ['feat/x'] })],
+      [branch('t3/rebase-x', 0, { copyOf: 'feat/x', remote: false } as Partial<Branch>), branch('feat/x', 5, { pr })],
+    )
+    const l = computeLayout(s, { ...ALL, onlyPRs: true })
+    expect(l.noPRCount).toBe(0)
+    expect(l.rows.flatMap((r) => (r.kind === 'branch' ? [r.branch.name] : []))).toEqual(['feat/x'])
+  })
+})
+
 describe('working copies', () => {
   it('folds a working copy into the card of the branch it copies', () => {
     const snap = snapshot(

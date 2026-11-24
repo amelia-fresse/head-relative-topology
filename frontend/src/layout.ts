@@ -105,6 +105,8 @@ export interface Layout {
   shownCount: number
   /** Local-only branches left out because settings.onlyRemote is on. */
   localOnlyCount: number
+  /** Branches without an open pull request left out because settings.onlyPRs is on. */
+  noPRCount: number
 }
 
 // ---------------------------------------------------------------------------
@@ -162,7 +164,11 @@ export function computeLayout(snapshot: Snapshot, settings: LayoutSettings): Lay
   const branches = snapshot.branches ?? []
   const local = snapshot.main?.local ?? null
   const onlyRemote = !!settings.onlyRemote
-  const shown = branches.filter((b) => (!b.hidden || settings.showHidden) && (!onlyRemote || b.remote))
+  const onlyPRs = !!settings.onlyPRs
+  const remoteOk = (b: Branch) => !onlyRemote || b.remote
+  const prOk = (b: Branch) => !onlyPRs || !!b.pr
+  const unhidden = (b: Branch) => !b.hidden || settings.showHidden
+  const shown = branches.filter((b) => unhidden(b) && remoteOk(b) && prOk(b))
   // A working copy (an agent's rebase) folds into the card of the branch it is a copy of.
   const shownNames = new Set(shown.map((b) => b.name))
   const visible = shown.filter((b) => !b.copyOf || !shownNames.has(b.copyOf))
@@ -334,8 +340,10 @@ export function computeLayout(snapshot: Snapshot, settings: LayoutSettings): Lay
 
   return {
     rows,
-    hiddenCount: branches.filter((b) => b.hidden && (!onlyRemote || b.remote)).length,
+    hiddenCount: branches.filter((b) => b.hidden && remoteOk(b) && prOk(b)).length,
     shownCount,
-    localOnlyCount: onlyRemote ? branches.filter((b) => !b.remote && (!b.hidden || settings.showHidden)).length : 0,
+    localOnlyCount: onlyRemote ? branches.filter((b) => !b.remote && unhidden(b) && prOk(b)).length : 0,
+    // Working copies fold into their branch's card, so they are not counted as left out.
+    noPRCount: onlyPRs ? branches.filter((b) => !b.pr && !b.copyOf && unhidden(b) && remoteOk(b)).length : 0,
   }
 }
